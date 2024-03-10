@@ -39,11 +39,11 @@ class PHPDocTypesSniff implements Sniff
     /** @var array[] file tokens */
     private array $tokens = [];
 
-    /** @var array<string, object{extends: ?string, implements: string[]}>*/
+    /** @var array<string, object{extends: ?string, implements: string[]}> */
     private array $artifacts = [];
 
-    /** @var ?TypeParser */
-    private ?TypeParser $typeparser = null;
+    /** @var ?PHPDocTypeParser */
+    private ?PHPDocTypeParser $typeparser = null;
 
     /** @var int */
     private int $pass = 0;
@@ -87,15 +87,21 @@ class PHPDocTypesSniff implements Sniff
         $this->pass = 1;
         $this->typeparser = null;
         $this->fileptr = $stackptr;
-        $this->scopes = [new Scope(null, (object)['type' => 'root'])];
+        $this->scopes = [new Scope(
+            (object)['type' => 'root', 'namespace' => "\\", 'uses' => [], 'templates' => [],
+            'classname' => null, 'parent' => null, 'opened' => true, 'closer' => null]
+        )];
         $this->fetchToken();
         $this->comment = null;
         $this->processPass();
 
         $this->pass = 2;
-        $this->typeparser = new TypeParser($this->artifacts);
+        $this->typeparser = new PHPDocTypeParser($this->artifacts);
         $this->fileptr = $stackptr;
-        $this->scopes = [new Scope(null, (object)['type' => 'root'])];
+        $this->scopes = [new Scope(
+            (object)['type' => 'root', 'namespace' => "\\", 'uses' => [], 'templates' => [],
+            'classname' => null, 'parent' => null, 'opened' => true, 'closer' => null]
+        )];
         $this->fetchToken();
         $this->comment = null;
         $this->processPass();
@@ -195,13 +201,10 @@ class PHPDocTypesSniff implements Sniff
                         end($this->scopes)->opened = true;
                     } else {
                         $oldscope = end($this->scopes);
-                        array_push(
-                            $this->scopes,
-                            $newscope = new Scope(
-                                $oldscope,
-                                (object)['type' => 'other', 'closer' => $this->tokens[$this->fileptr]['scope_closer']]
-                            )
-                        );
+                        array_push($this->scopes, $newscope = clone $oldscope);
+                        $newscope->type = 'other';
+                        $newscope->opened = true;
+                        $newscope->closer = $this->tokens[$this->fileptr]['scope_closer'];
                     }
                     $this->advance(null, false);
                     continue;
@@ -315,7 +318,7 @@ class PHPDocTypesSniff implements Sniff
      * @return void
      */
     private function processComment(): void {
-        $this->comment = new PHPDoc();
+        $this->comment = new PHPDoc((object)['tags' => []]);
         while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
             $tagtype = null;
             $tagcontent = "";
@@ -371,7 +374,10 @@ class PHPDocTypesSniff implements Sniff
             $this->advance(T_SEMICOLON, false);
         } else {
             $oldscope = end($this->scopes);
-            array_push($this->scopes, $newscope = new Scope($oldscope, (object)['type' => 'namespace']));
+            array_push($this->scopes, $newscope = clone $oldscope);
+            $newscope->type = 'namespace';
+            $newscope->opened = false;
+            $newscope->closer = null;
         }
     }
 
@@ -492,10 +498,12 @@ class PHPDocTypesSniff implements Sniff
         // Check not anonymous.
         $this->file->addWarning('Found classish %s', $this->fileptr, 'debug', [$name]);
         $oldscope = end($this->scopes);
-        array_push(
-            $this->scopes,
-            $newscope = new Scope($oldscope, (object)['type' => 'classish', 'classname' => $name, 'parentname' => $parent])
-        );
+        array_push($this->scopes, $newscope = clone $oldscope);
+        $newscope->type = 'classish';
+        $newscope->classname = $name;
+        $newscope->parentname = $parent;
+        $newscope->opened = false;
+        $newscope->closer = null;
         if ($this->pass == 1) {
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
         } elseif ($this->pass == 2) {
@@ -536,7 +544,10 @@ class PHPDocTypesSniff implements Sniff
         $parameters = $this->file->getMethodParameters($this->fileptr);
         $properties = $this->file->getMethodProperties($this->fileptr);
         $oldscope = end($this->scopes);
-        array_push($this->scopes, $newscope = new Scope($oldscope, (object)['type' => 'function']));
+        array_push($this->scopes, $newscope = clone $oldscope);
+        $newscope->type = 'function';
+        $newscope->opened = false;
+        $newscope->closer = null;
 
         if ($this->pass == 2) {
             $this->file->addWarning(
@@ -790,7 +801,7 @@ class Scope
     public ?string $type = null;
 
     /** @var string current namespace */
-    public string $namespace = '\\';
+    public string $namespace = "\\";
 
     /** @var array<string, string> use definitions by name */
     public array $uses = [];
@@ -812,27 +823,17 @@ class Scope
 
     /**
      * Construct scope information
-     * @param ?Scope $oldscope the enclosing scope
-     * @param ?object{type: ?string, closer: int} $overrides
+     * @param object{type: ?string, namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string, opened: bool, closer: int} $data
      */
-    public function __construct(?Scope $oldscope = null, ?object $overrides = null) {
-        if ($oldscope) {
-            $this->namespace = $oldscope->namespace;
-            $this->uses = $oldscope->uses;
-            $this->templates = $oldscope->templates;
-            $this->classname = $oldscope->classname;
-            $this->parentname = $oldscope->parentname;
-        }
-        if (!$overrides) {
-            $overrides = (object)[];
-        }
-        $this->type = $overrides->type ?? 'other';
-        $this->opened = ($this->type == 'root' || $this->type == 'other');
-        $this->closer = $overrides->closer ?? null;
-        if ($this->type == 'classish') {
-            $this->classname = $overrides->classname ?? null;
-            $this->parentname = $overrides->parentname ?? null;
-        }
+    public function __construct(?Scope $oldscope = null, object $data) {
+        $this->type = $data->type;
+        $this->namespace = $data->namespace;
+        $this->uses = $data->uses;
+        $this->templates = $data->templates;
+        $this->classname = $data->classname;
+        $this->parentname = $data->parentname;
+        $this->opened = $data->opened;
+        $this->closer = $data->closer;
     }
 }
 
@@ -843,6 +844,14 @@ class PHPDoc
 {
     /** @var array<string, string[]> */
     public array $tags = [];
+
+    /**
+     * Construct PHPDoc information
+     * @param object{tags: array<string, string[]} $data
+     */
+    public function __construct(object $data) {
+        $this->tags = $data->tags;
+    }
 }
 
 /**
@@ -855,7 +864,7 @@ class PHPDoc
  * @copyright   2023 Otago Polytechnic
  * @author      James Calder
  */
-class TypeParser
+class PHPDocTypeParser
 {
     /** @var array<non-empty-string, non-empty-string[]> predefined and SPL classes */
     protected array $library = [
