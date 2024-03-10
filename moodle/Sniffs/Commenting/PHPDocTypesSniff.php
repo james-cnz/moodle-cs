@@ -33,7 +33,6 @@ use PHP_CodeSniffer\Files\File;
  */
 class PHPDocTypesSniff implements Sniff
 {
-
     /** @var ?File the current file */
     private ?File $file = null;
 
@@ -100,7 +99,6 @@ class PHPDocTypesSniff implements Sniff
         $this->fetchToken();
         $this->comment = null;
         $this->processPass();
-
     }
 
     /**
@@ -111,16 +109,19 @@ class PHPDocTypesSniff implements Sniff
 
         while ($this->token['code']) {
             try {
-
                 // Skip irrelevant stuff.
-                while (!in_array($this->token['code'], [
-                                T_DOC_COMMENT_OPEN_TAG, T_NAMESPACE, T_USE,
-                                T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
-                                T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_CLOSURE, T_VAR, T_CONST,
-                                T_DECLARE,
-                                T_SEMICOLON, null])
-                            && (!isset($this->token['scope_opener']) || $this->token['scope_opener'] != $this->fileptr)
-                            && (!isset($this->token['scope_closer']) || $this->token['scope_closer'] != $this->fileptr)) {
+                while (
+                    !in_array(
+                        $this->token['code'],
+                        [T_DOC_COMMENT_OPEN_TAG, T_NAMESPACE, T_USE,
+                        T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
+                        T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_CLOSURE, T_VAR, T_CONST,
+                        T_DECLARE,
+                        T_SEMICOLON, null]
+                    )
+                    && (!isset($this->token['scope_opener']) || $this->token['scope_opener'] != $this->fileptr)
+                    && (!isset($this->token['scope_closer']) || $this->token['scope_closer'] != $this->fileptr)
+                ) {
                     $this->advance(null, false);
                 }
 
@@ -136,10 +137,12 @@ class PHPDocTypesSniff implements Sniff
                 }
 
                 // Malformed prior declaration. // TODO: Remove?
-                if (!end($this->scopes)->opened
+                if (
+                    !end($this->scopes)->opened
                         && (!$this->token['code']
                             || !(isset($this->token['scope_opener']) && $this->token['scope_opener'] == $this->fileptr
-                                || $this->token['code'] == T_SEMICOLON))) {
+                                || $this->token['code'] == T_SEMICOLON))
+                ) {
                     array_pop($this->scopes);
                     throw new \Exception();
                 }
@@ -147,11 +150,14 @@ class PHPDocTypesSniff implements Sniff
                 // Comments.
                 if ($this->token['code'] == T_DOC_COMMENT_OPEN_TAG) {
                     $this->processComment();
-                    if (!in_array($this->token['code'], [
-                                T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
-                                T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_CLOSURE, T_VAR, T_CONST,
-                                T_DECLARE, // T_VARIABLE, // TODO: Remove that last one?
-                                ])) {
+                    if (
+                        !in_array(
+                            $this->token['code'],
+                            [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
+                            T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_CLOSURE, T_VAR, T_CONST,
+                            T_DECLARE, /* T_VARIABLE,*/]
+                        )
+                    ) {
                         $this->comment = null;
                         continue;
                     }
@@ -189,9 +195,13 @@ class PHPDocTypesSniff implements Sniff
                         end($this->scopes)->opened = true;
                     } else {
                         $oldscope = end($this->scopes);
-                        array_push($this->scopes,
-                            $newscope = new Scope($oldscope,
-                                (object)['type' => 'other', 'closer' => $this->tokens[$this->fileptr]['scope_closer']]));
+                        array_push(
+                            $this->scopes,
+                            $newscope = new Scope(
+                                $oldscope,
+                                (object)['type' => 'other', 'closer' => $this->tokens[$this->fileptr]['scope_closer']]
+                            )
+                        );
                     }
                     $this->advance(null, false);
                     continue;
@@ -223,8 +233,12 @@ class PHPDocTypesSniff implements Sniff
                 }
 
                 // Declarations.
-                while (in_array($this->token['code'],
-                        [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL])) {
+                while (
+                    in_array(
+                        $this->token['code'],
+                        [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL]
+                    )
+                ) {
                     $this->advance();
                 }
                 if (in_array($this->token['code'], [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
@@ -244,17 +258,22 @@ class PHPDocTypesSniff implements Sniff
             } catch (\Exception $e) {
                 // TODO: Remove.
                 echo ($this->token['content']);
-                $this->file->addError('Parse error',
-                    $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1, 'debug');
+                $this->file->addError(
+                    'Parse error',
+                    $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
+                    'debug'
+                );
             }
         }
 
         if (!$this->token['code'] && count($this->scopes) != 1) {
             // TODO: Remove.
-            $this->file->addError('Parse error',
-                $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1, 'debug');
+            $this->file->addError(
+                'Parse error',
+                $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
+                'debug'
+            );
         }
-
     }
 
     /**
@@ -276,11 +295,15 @@ class PHPDocTypesSniff implements Sniff
             throw new \Exception();
         }
         $nextptr = $this->fileptr + 1;
-        while ($nextptr < count($this->tokens)
+        while (
+            $nextptr < count($this->tokens)
                 && (in_array($this->tokens[$nextptr]['code'], [T_WHITESPACE, T_COMMENT])
-                    || $skipphpdoc && in_array($this->tokens[$nextptr]['code'],
+                    || $skipphpdoc && in_array(
+                        $this->tokens[$nextptr]['code'],
                         [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_STAR,
-                            T_DOC_COMMENT_TAG, T_DOC_COMMENT_STRING, T_DOC_COMMENT_WHITESPACE]))) {
+                            T_DOC_COMMENT_TAG, T_DOC_COMMENT_STRING, T_DOC_COMMENT_WHITESPACE]
+                    ))
+        ) {
             // TODO: Check unexpected PHPDoc comment.
             $nextptr++;
         }
@@ -304,8 +327,10 @@ class PHPDocTypesSniff implements Sniff
                 $tagtype = $this->token['content'];
                 $this->advance(T_DOC_COMMENT_TAG, false);
             }
-            while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG
-                    && !in_array(substr($this->token['content'], -1), ["\n", "\r"])) {
+            while (
+                $this->token['code'] != T_DOC_COMMENT_CLOSE_TAG
+                && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
+            ) {
                 $tagcontent .= $this->token['content'];
                 $this->advance(null, false);
             }
@@ -324,8 +349,12 @@ class PHPDocTypesSniff implements Sniff
     private function processNamespace(): void {
         $this->advance(T_NAMESPACE);
         $namespace = '';
-        while ($this->token && in_array($this->token['code'],
-                    [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING])) {
+        while (
+            $this->token && in_array(
+                $this->token['code'],
+                [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING]
+            )
+        ) {
             $namespace .= $this->token['content'];
             $this->advance();
         }
@@ -364,8 +393,12 @@ class PHPDocTypesSniff implements Sniff
                 $type = 'const';
                 $this->advance(T_CONST);
             }
-            while ($this->token && in_array($this->token['code'],
-                        [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING])) {
+            while (
+                $this->token && in_array(
+                    $this->token['code'],
+                    [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING]
+                )
+            ) {
                 $namespace .= $this->token['content'];
                 $this->advance();
             }
@@ -387,9 +420,11 @@ class PHPDocTypesSniff implements Sniff
                         $this->advance(T_CONST);
                     }
                     while (
-                                $this->token && in_array($this->token['code'],
-                                    [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING])
-                            ) {
+                        $this->token && in_array(
+                            $this->token['code'],
+                            [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING]
+                        )
+                    ) {
                         $namespaceend .= $this->token['content'];
                         $this->advance();
                     }
@@ -424,7 +459,7 @@ class PHPDocTypesSniff implements Sniff
                         $this->advance(T_STRING);
                     }
                 }
-                if ($this->pass == 2&& $type == 'class') {
+                if ($this->pass == 2 && $type == 'class') {
                     end($this->scopes)->uses[$alias] = $namespace;
                     $this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
                 }
@@ -458,8 +493,10 @@ class PHPDocTypesSniff implements Sniff
         // Check not anonymous.
         $this->file->addWarning('Found classish %s', $this->fileptr, 'debug', [$name]);
         $oldscope = end($this->scopes);
-        array_push($this->scopes, $newscope = new Scope($oldscope,
-            (object)['type' => 'classish', 'classname' => $name, 'parentname' => $parent]));
+        array_push(
+            $this->scopes,
+            $newscope = new Scope($oldscope, (object)['type' => 'classish', 'classname' => $name, 'parentname' => $parent])
+        );
         if ($this->pass == 1) {
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
         } elseif ($this->pass == 2) {
@@ -473,15 +510,19 @@ class PHPDocTypesSniff implements Sniff
         $this->advance();
         // Extends and implements.
         while (
-                    in_array($this->token['code'],
-                        [T_STRING, T_EXTENDS, T_IMPLEMENTS, T_COMMA,
-                        T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR])
-                ) {
+            in_array(
+                $this->token['code'],
+                [T_STRING, T_EXTENDS, T_IMPLEMENTS, T_COMMA,
+                T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR]
+            )
+        ) {
             $this->advance();
         }
         // Body start.
-        if (!$this->token || !($this->token['code'] == T_SEMICOLON
-                    || (isset($this->token['scope_opener']) && $this->token['scope_opener'] == $this->fileptr))) {
+        if (
+            !$this->token || !($this->token['code'] == T_SEMICOLON
+                        || (isset($this->token['scope_opener']) && $this->token['scope_opener'] == $this->fileptr))
+        ) {
             throw new \Exception();
         }
     }
@@ -499,20 +540,31 @@ class PHPDocTypesSniff implements Sniff
         array_push($this->scopes, $newscope = new Scope($oldscope, (object)['type' => 'function']));
 
         if ($this->pass == 2) {
-            $this->file->addWarning('Found function %s params %s return %s', $this->fileptr, 'debug',
-                [$name, count($parameters), $properties['return_type']]);
+            $this->file->addWarning(
+                'Found function %s params %s return %s',
+                $this->fileptr,
+                'debug',
+                [$name, count($parameters), $properties['return_type']]
+            );
             if ($this->comment && isset($parameters)) {
                 if (!isset($this->comment->tags['@param'])) {
                     $this->comment->tags['@param'] = [];
                 }
                 if (count($this->comment->tags['@param']) != count($parameters)) {
-                    $this->file->addWarning('PHPDoc number of function parameters doesn\'t match actual number',
-                        $this->fileptr, 'phpdoc_fun_param_count_wrong');
+                    $this->file->addWarning(
+                        'PHPDoc number of function parameters doesn\'t match actual number',
+                        $this->fileptr,
+                        'phpdoc_fun_param_count_wrong'
+                    );
                 }
                 for ($varnum = 0; $varnum < count($this->comment->tags['@param']); $varnum++) {
                     if ($varnum < count($parameters)) {
-                        $this->file->addWarning('PHP param %s vs PHPDoc param %s',
-                            $this->fileptr, 'debug', [$parameters[$varnum]['content'], $this->comment->tags['@param'][$varnum]]);
+                        $this->file->addWarning(
+                            'PHP param %s vs PHPDoc param %s',
+                            $this->fileptr,
+                            'debug',
+                            [$parameters[$varnum]['content'], $this->comment->tags['@param'][$varnum]]
+                        );
                     }
                 }
             }
@@ -521,13 +573,20 @@ class PHPDocTypesSniff implements Sniff
                     $this->comment->tags['@return'] = [];
                 }
                 if (count($this->comment->tags['@return']) != 1) {  // TODO: What about __construct ?
-                    $this->file->addWarning('PHPDoc missing or multiple function return types',
-                        $this->fileptr, 'phpdoc_fun_ret_count_wrong');
+                    $this->file->addWarning(
+                        'PHPDoc missing or multiple function return types',
+                        $this->fileptr,
+                        'phpdoc_fun_ret_count_wrong'
+                    );
                 }
                 if ($properties['return_type']) {
                     for ($retnum = 0; $retnum < count($this->comment->tags['@return']); $retnum++) {
-                        $this->file->addWarning('PHP ret %s vs PHPDoc ret %s',
-                            $this->fileptr, 'debug', [$properties['return_type'], $this->comment->tags['@return'][$retnum]]);
+                        $this->file->addWarning(
+                            'PHP ret %s vs PHPDoc ret %s',
+                            $this->fileptr,
+                            'debug',
+                            [$properties['return_type'], $this->comment->tags['@return'][$retnum]]
+                        );
                     }
                 }
             }
@@ -546,7 +605,9 @@ class PHPDocTypesSniff implements Sniff
             throw new \Exception();
         }
         // TODO: Give up on this.
-        while (in_array($this->token['code'],
+        while (
+            in_array(
+                $this->token['code'],
                 [// Brackets and return seperator.
                 T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS, T_COLON,
                 // Visibility.
@@ -567,12 +628,16 @@ class PHPDocTypesSniff implements Sniff
                 T_OPEN_SQUARE_BRACKET, T_CLOSE_SQUARE_BRACKET,
                 T_START_HEREDOC, T_HEREDOC, T_END_HEREDOC, T_START_NOWDOC, T_NOWDOC, T_END_NOWDOC,
                 // Use.
-                T_USE, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS, T_COMMA, T_BITWISE_AND, T_VARIABLE])) {
+                T_USE, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS, T_COMMA, T_BITWISE_AND, T_VARIABLE]
+            )
+        ) {
             $this->advance();
         }
         // Body start.
-        if (!($this->token['code'] == T_SEMICOLON
-                    || (isset($this->token['scope_opener']) && $this->token['scope_opener'] == $this->fileptr))) {
+        if (
+            !($this->token['code'] == T_SEMICOLON
+                || (isset($this->token['scope_opener']) && $this->token['scope_opener'] == $this->fileptr))
+        ) {
             throw new \Exception();
         }
     }
@@ -596,10 +661,14 @@ class PHPDocTypesSniff implements Sniff
 
         // Parse type.  TODO: Check if there is type info.
         if (!$const) {
-            while (in_array($this->token['code'],
+            while (
+                in_array(
+                    $this->token['code'],
                     [T_TYPE_UNION, T_TYPE_INTERSECTION, T_NULLABLE, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS,
                     T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING,
-                    T_NULL, T_ARRAY, T_OBJECT, T_SELF, T_PARENT, T_FALSE, T_TRUE, T_CALLABLE, T_STATIC, ])) {
+                    T_NULL, T_ARRAY, T_OBJECT, T_SELF, T_PARENT, T_FALSE, T_TRUE, T_CALLABLE, T_STATIC, ]
+                )
+            ) {
                 $this->advance();
             }
         }
@@ -631,8 +700,12 @@ class PHPDocTypesSniff implements Sniff
                     }
                     if ($properties['type']) {
                         for ($varnum = 0; $varnum < count($this->comment->tags['@var']); $varnum++) {
-                            $this->file->addWarning('PHP var %s vs PHPDoc var %s',
-                                $this->fileptr, 'debug', [$properties['type'], $this->comment->tags['@var'][$varnum]]);
+                            $this->file->addWarning(
+                                'PHP var %s vs PHPDoc var %s',
+                                $this->fileptr,
+                                'debug',
+                                [$properties['type'], $this->comment->tags['@var'][$varnum]]
+                            );
                         }
                     }
                 }
@@ -652,7 +725,9 @@ class PHPDocTypesSniff implements Sniff
             // Parse default value.  // TODO: Balance brackets, so we don't consume trailing comma? // TODO: Give up.
             if ($this->token['code'] == T_EQUAL) {
                 $this->advance(T_EQUAL);
-                while (in_array($this->token['code'],
+                while (
+                    in_array(
+                        $this->token['code'],
                         [T_OPEN_SHORT_ARRAY, T_CLOSE_SHORT_ARRAY, T_ARRAY, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS,
                         T_COMMA, T_DOUBLE_ARROW,
                         T_NULL, T_MINUS, T_LNUMBER, T_DNUMBER, T_CONSTANT_ENCAPSED_STRING, T_TRUE, T_FALSE, T_STRING,
@@ -660,7 +735,9 @@ class PHPDocTypesSniff implements Sniff
                         T_DIR, T_CLASS_C,
                         T_MULTIPLY, T_DIVIDE, T_STRING_CONCAT, T_LESS_THAN, T_INLINE_THEN, T_INLINE_ELSE, T_BOOLEAN_AND, T_POW,
                         T_OPEN_SQUARE_BRACKET, T_CLOSE_SQUARE_BRACKET,
-                        T_START_HEREDOC, T_HEREDOC, T_END_HEREDOC, T_START_NOWDOC, T_NOWDOC, T_END_NOWDOC])) {
+                        T_START_HEREDOC, T_HEREDOC, T_END_HEREDOC, T_START_NOWDOC, T_NOWDOC, T_END_NOWDOC]
+                    )
+                ) {
                     $this->advance();
                 }
             }
@@ -669,11 +746,9 @@ class PHPDocTypesSniff implements Sniff
             if ($more && $this->token['code'] == T_COMMA) {
                 $this->advance(T_COMMA);
             }
-
         } while ($more);
 
         $this->advance(T_SEMICOLON, false);
-
     }
 
     /**
@@ -688,21 +763,23 @@ class PHPDocTypesSniff implements Sniff
         $this->advance(T_EQUAL);
 
         // Value.  // TODO: Give up on this.
-        while (in_array($this->token['code'],
+        while (
+            in_array(
+                $this->token['code'],
                 [T_OPEN_SHORT_ARRAY, T_CLOSE_SHORT_ARRAY, T_ARRAY, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS,
                 T_COMMA, T_DOUBLE_ARROW,
                 T_NULL, T_MINUS, T_LNUMBER, T_DNUMBER, T_CONSTANT_ENCAPSED_STRING, T_TRUE, T_FALSE, T_STRING,
                 T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING, T_DOUBLE_COLON,
                 T_MULTIPLY, T_DIVIDE, T_STRING_CONCAT, T_LESS_THAN, T_INLINE_THEN, T_INLINE_ELSE, T_BOOLEAN_AND, T_POW,
                 T_OPEN_SQUARE_BRACKET, T_CLOSE_SQUARE_BRACKET,
-                T_START_HEREDOC, T_HEREDOC, T_END_HEREDOC,  T_START_NOWDOC, T_NOWDOC, T_END_NOWDOC])) {
+                T_START_HEREDOC, T_HEREDOC, T_END_HEREDOC,  T_START_NOWDOC, T_NOWDOC, T_END_NOWDOC]
+            )
+        ) {
             $this->advance();
         }
 
         $this->advance(T_SEMICOLON, false);
-
     }
-
 }
 
 /**
@@ -710,7 +787,6 @@ class PHPDocTypesSniff implements Sniff
  */
 class Scope
 {
-
     /** @var ?string the type of scope */
     public ?string $type = null;
 
@@ -759,7 +835,6 @@ class Scope
             $this->parentname = $overrides->parentname ?? null;
         }
     }
-
 }
 
 /**
@@ -767,10 +842,8 @@ class Scope
  */
 class PHPDoc
 {
-
     /** @var array<string, string[]> */
     public array $tags = [];
-
 }
 
 /**
@@ -785,7 +858,6 @@ class PHPDoc
  */
 class TypeParser
 {
-
     /** @var array<non-empty-string, non-empty-string[]> predefined and SPL classes */
     protected array $library = [
         // Predefined general.
@@ -908,7 +980,7 @@ class TypeParser
     protected array $nexts = [];
 
     /** @var ?non-empty-string the next token */
-    protected string $next = null;
+    protected ?string $next = null;
 
     /**
      * Constructor
@@ -927,8 +999,7 @@ class TypeParser
      * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string, nullable: bool}
      *          the simplified type, variable, remaining text, and whether the type is explicitly nullable
      */
-    public function parseTypeAndVar(?Scope $scope,
-            string $text, int $getwhat, bool $gowide): object {
+    public function parseTypeAndVar(?Scope $scope, string $text, int $getwhat, bool $gowide): object {
 
         // Initialise variables.
         if ($scope) {
@@ -951,9 +1022,11 @@ class TypeParser
         try {
             $type = $this->parseAnyType();
             $explicitnullable = strpos("|{$type}|", "|null|") !== false; // For code smell check.
-            if (!($this->next == null || $getwhat >= 1
+            if (
+                !($this->next == null || $getwhat >= 1
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
-                    || in_array($this->next, [',', ';', ':', '.']))) {
+                    || in_array($this->next, [',', ';', ':', '.']))
+            ) {
                 // Code smell check.
                 throw new \Exception("Warning parsing type, no space after type.");
             }
@@ -988,9 +1061,11 @@ class TypeParser
                 $variable .= $this->next(0, true);
                 assert($variable != '');
                 $this->parseToken();
-                if (!($this->next == null || $getwhat >= 3 && $this->next == '='
+                if (
+                    !($this->next == null || $getwhat >= 3 && $this->next == '='
                         || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
-                        || in_array($this->next, [',', ';', ':', '.']))) {
+                        || in_array($this->next, [',', ';', ':', '.']))
+                ) {
                     // Code smell check.
                     throw new \Exception("Warning parsing type, no space after variable name.");
                 }
@@ -1073,12 +1148,10 @@ class TypeParser
                 // And find all parts of one of them.
                 $haveallsingles = true;
                 foreach ($widesingles as $widesingle) {
-
                     if (!in_array($widesingle, $narrowsingles)) {
                         $haveallsingles = false;
                         break;
                     }
-
                 }
                 if ($haveallsingles) {
                     $havethisintersection = true;
@@ -1164,7 +1237,6 @@ class TypeParser
 
         // Fetch any more tokens we need.
         while (count($this->nexts) < $lookahead + 1) {
-
             $startpos = $this->nexts ? end($this->nexts)->endpos : 0;
             $stringunterminated = false;
 
@@ -1185,10 +1257,14 @@ class TypeParser
                 do {
                     $endpos = $endpos + 1;
                     $nextchar = ($endpos < strlen($this->text)) ? $this->text[$endpos] : null;
-                } while ($nextchar != null && (ctype_alnum($nextchar) || $nextchar == '_'
-                                            || $firstchar != '$' && ($nextchar == '-' || $nextchar == '\\')));
-            } elseif (ctype_digit($firstchar)
-                        || $firstchar == '-' && strlen($this->text) >= $startpos + 2 && ctype_digit($this->text[$startpos + 1])) {
+                } while (
+                    $nextchar != null && (ctype_alnum($nextchar) || $nextchar == '_'
+                                        || $firstchar != '$' && ($nextchar == '-' || $nextchar == '\\'))
+                );
+            } elseif (
+                ctype_digit($firstchar)
+                || $firstchar == '-' && strlen($this->text) >= $startpos + 2 && ctype_digit($this->text[$startpos + 1])
+            ) {
                 // Number token.
                 $nextchar = $firstchar;
                 $havepoint = false;
@@ -1322,8 +1398,10 @@ class TypeParser
                         foreach ($intersectiontypes as $intersectiontype) {
                             assert($intersectiontype != '');
                             $supertypes = $this->superTypes($intersectiontype);
-                            if (!(in_array($intersectiontype, ['object', 'iterable', 'callable'])
-                                    || in_array('object', $supertypes))) {
+                            if (
+                                !(in_array($intersectiontype, ['object', 'iterable', 'callable'])
+                                    || in_array('object', $supertypes))
+                            ) {
                                 throw new \Exception("Error parsing type, intersection can only be used with objects.");
                             }
                             foreach ($supertypes as $supertype) {
@@ -1388,7 +1466,6 @@ class TypeParser
         $type = implode('|', $uniontypes);
         assert($type != '');
         return $type;
-
     }
 
     /**
@@ -1430,11 +1507,11 @@ class TypeParser
             $this->parseToken();
             $type = 'bool';
         } elseif (
-                    in_array(strtolower($next), ['int', 'integer', 'positive-int', 'negative-int',
-                                                'non-positive-int', 'non-negative-int',
-                                                'int-mask', 'int-mask-of', ])
-                    || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') === false
-                ) {
+            in_array(strtolower($next), ['int', 'integer', 'positive-int', 'negative-int',
+                                        'non-positive-int', 'non-negative-int',
+                                        'int-mask', 'int-mask-of', ])
+            || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') === false
+        ) {
             // Int.
             $inttype = strtolower($this->parseToken());
             if ($inttype == 'int' && $this->next == '<') {
@@ -1442,20 +1519,20 @@ class TypeParser
                 $this->parseToken('<');
                 $next = $this->next;
                 if (
-                            $next == null
-                                || !(strtolower($next) == 'min'
-                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
-                        ) {
+                    $next == null
+                    || !(strtolower($next) == 'min'
+                            || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                ) {
                     throw new \Exception("Error parsing type, expected int min, saw \"{$next}\".");
                 }
                 $this->parseToken();
                 $this->parseToken(',');
                 $next = $this->next;
                 if (
-                            $next == null
-                                || !(strtolower($next) == 'max'
-                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
-                        ) {
+                    $next == null
+                    || !(strtolower($next) == 'max'
+                        || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                ) {
                     throw new \Exception("Error parsing type, expected int max, saw \"{$next}\".");
                 }
                 $this->parseToken();
@@ -1485,17 +1562,17 @@ class TypeParser
             }
             $type = 'int';
         } elseif (
-                    in_array(strtolower($next), ['float', 'double'])
-                    || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') !== false
-                ) {
+            in_array(strtolower($next), ['float', 'double'])
+            || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') !== false
+        ) {
             // Float.
             $this->parseToken();
             $type = 'float';
         } elseif (
-                    in_array(strtolower($next), ['string', 'class-string', 'numeric-string', 'literal-string',
-                                                'non-empty-string', 'non-falsy-string', 'truthy-string', ])
-                    || $nextchar == '"' || $nextchar == '\''
-                ) {
+            in_array(strtolower($next), ['string', 'class-string', 'numeric-string', 'literal-string',
+                                        'non-empty-string', 'non-falsy-string', 'truthy-string', ])
+            || $nextchar == '"' || $nextchar == '\''
+        ) {
             // String.
             $strtype = strtolower($this->parseToken());
             if ($strtype == 'class-string' && $this->next == '<') {
@@ -1571,9 +1648,9 @@ class TypeParser
                 do {
                     $next = $this->next;
                     if (
-                            $next == null
-                            || !(ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"')
-                        ) {
+                        $next == null
+                        || !(ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"')
+                    ) {
                         throw new \Exception("Error parsing type, invalid object key.");
                     }
                     $this->parseToken();
@@ -1619,9 +1696,9 @@ class TypeParser
             $this->parseToken();
             $type = 'static';
         } elseif (
-                    strtolower($next) == 'callable'
-                    || $next == "\\Closure" || $next == 'Closure' && $this->namespace == "\\"
-                ) {
+            strtolower($next) == 'callable'
+            || $next == "\\Closure" || $next == 'Closure' && $this->namespace == "\\"
+        ) {
             // Callable.
             $callabletype = $this->parseToken();
             if ($this->next == '(') {
@@ -1708,9 +1785,9 @@ class TypeParser
             $this->parseToken('>');
             $type = $this->gowide ? 'mixed' : 'never';
         } elseif (
-                    (ctype_alpha($next[0]) || $next[0] == '_' || $next[0] == '\\')
-                    && strpos($next, '-') === false && strpos($next, '\\\\') === false
-                ) {
+            (ctype_alpha($next[0]) || $next[0] == '_' || $next[0] == '\\')
+            && strpos($next, '-') === false && strpos($next, '\\\\') === false
+        ) {
             // Class name.
             $type = $this->parseToken();
             if ($type[0] != "\\") {
