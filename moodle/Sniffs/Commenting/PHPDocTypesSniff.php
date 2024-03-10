@@ -74,7 +74,7 @@ class PHPDocTypesSniff implements Sniff
      * @param int $stackptr The position in the stack.
      * @return void
      */
-    public function process(File $phpcsfile, int $stackptr): void {
+    public function process(File $phpcsfile, $stackptr): void {
 
         if ($phpcsfile == $this->file) {
             return;
@@ -254,7 +254,6 @@ class PHPDocTypesSniff implements Sniff
                     $this->processVariable();
                     continue;
                 }
-
             } catch (\Exception $e) {
                 // TODO: Remove.
                 echo ($this->token['content']);
@@ -1619,11 +1618,11 @@ class TypeParser
                 do {
                     $next = $this->next;
                     if (
-                                $next != null
-                                && (ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"'
-                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
-                                && ($this->next(1) == ':' || $this->next(1) == '?' && $this->next(2) == ':')
-                            ) {
+                        $next != null
+                        && (ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"'
+                            || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                        && ($this->next(1) == ':' || $this->next(1) == '?' && $this->next(2) == ':')
+                    ) {
                         $this->parseToken();
                         if ($this->next == '?') {
                             $this->parseToken('?');
