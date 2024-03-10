@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -30,7 +31,8 @@ use PHP_CodeSniffer\Files\File;
 /**
  * Check PHPDoc Types.
  */
-class PHPDocTypesSniff implements Sniff {
+class PHPDocTypesSniff implements Sniff
+{
 
     /** @var ?File the current file */
     private ?File $file = null;
@@ -41,8 +43,8 @@ class PHPDocTypesSniff implements Sniff {
     /** @var array<string, object{extends: ?string, implements: string[]}>*/
     private array $artifacts = [];
 
-    /** @var ?type_parser */
-    private ?type_parser $typeparser = null;
+    /** @var ?TypeParser */
+    private ?TypeParser $typeparser = null;
 
     /** @var int */
     private int $pass = 0;
@@ -69,12 +71,11 @@ class PHPDocTypesSniff implements Sniff {
 
     /**
      * Processes PHP files and perform various checks with file.
-     *
      * @param File $phpcsfile The file being scanned.
      * @param int $stackptr The position in the stack.
      * @return void
      */
-    public function process(File $phpcsfile, $stackptr): void {
+    public function process(File $phpcsfile, int $stackptr): void {
 
         if ($phpcsfile == $this->file) {
             return;
@@ -88,26 +89,25 @@ class PHPDocTypesSniff implements Sniff {
         $this->typeparser = null;
         $this->fileptr = $stackptr;
         $this->scopes = [new Scope(null, (object)['type' => 'root'])];
-        $this->fetch_token();
+        $this->fetchToken();
         $this->comment = null;
-        $this->process_pass();
+        $this->processPass();
 
         $this->pass = 2;
-        $this->typeparser = new type_parser($this->artifacts);
+        $this->typeparser = new TypeParser($this->artifacts);
         $this->fileptr = $stackptr;
         $this->scopes = [new Scope(null, (object)['type' => 'root'])];
-        $this->fetch_token();
+        $this->fetchToken();
         $this->comment = null;
-        $this->process_pass();
+        $this->processPass();
 
     }
 
     /**
      * A pass over the file.
-     *
      * @return void
      */
-    public function process_pass(): void {
+    public function processPass(): void {
 
         while ($this->token['code']) {
             try {
@@ -146,7 +146,7 @@ class PHPDocTypesSniff implements Sniff {
 
                 // Comments.
                 if ($this->token['code'] == T_DOC_COMMENT_OPEN_TAG) {
-                    $this->process_comment();
+                    $this->processComment();
                     if (!in_array($this->token['code'], [
                                 T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
                                 T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_FUNCTION, T_CLOSURE, T_VAR, T_CONST,
@@ -161,14 +161,14 @@ class PHPDocTypesSniff implements Sniff {
 
                 // Namespace.
                 if ($this->token['code'] == T_NAMESPACE) {
-                    $this->process_namespace();
+                    $this->processNamespace();
                     continue;
                 }
 
                 // Use.
                 if ($this->token['code'] == T_USE) {
                     if (end($this->scopes)->type != 'classish') {
-                        $this->process_use();
+                        $this->processUse();
                     } else {
                         $this->advance(T_USE, false);
                     }
@@ -218,7 +218,7 @@ class PHPDocTypesSniff implements Sniff {
 
                 // Declare.
                 if ($this->token['code'] == T_DECLARE) {
-                    $this->process_declare();
+                    $this->processDeclare();
                     continue;
                 }
 
@@ -229,15 +229,15 @@ class PHPDocTypesSniff implements Sniff {
                 }
                 if (in_array($this->token['code'], [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
                     // Classish thing.
-                    $this->process_classish();
+                    $this->processClassish();
                     continue;
-                } else if ($this->token['code'] == T_FUNCTION || $this->token['code'] == T_CLOSURE) {
+                } elseif ($this->token['code'] == T_FUNCTION || $this->token['code'] == T_CLOSURE) {
                     // Function.
-                    $this->process_function();
+                    $this->processFunction();
                     continue;
                 } else {
                     // Possible variable.
-                    $this->process_variable();
+                    $this->processVariable();
                     continue;
                 }
 
@@ -261,7 +261,7 @@ class PHPDocTypesSniff implements Sniff {
      * Fetch the current tokens.
      * @return void
      */
-    private function fetch_token(): void {
+    private function fetchToken(): void {
         $this->token = ($this->fileptr < count($this->tokens)) ? $this->tokens[$this->fileptr] : ['code' => null, 'content' => ''];
     }
 
@@ -285,14 +285,14 @@ class PHPDocTypesSniff implements Sniff {
             $nextptr++;
         }
         $this->fileptr = $nextptr;
-        $this->fetch_token();
+        $this->fetchToken();
     }
 
     /**
      * Process a PHPDoc comment.
      * @return void
      */
-    private function process_comment(): void {
+    private function processComment(): void {
         $this->comment = new PHPDoc();
         while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
             $tagtype = null;
@@ -321,7 +321,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a namespace declaration.
      * @return void
      */
-    private function process_namespace(): void {
+    private function processNamespace(): void {
         $this->advance(T_NAMESPACE);
         $namespace = '';
         while ($this->token && in_array($this->token['code'],
@@ -351,7 +351,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a use declaration.
      * @return void
      */
-    private function process_use(): void {
+    private function processUse(): void {
         $this->advance(T_USE);
         $more = false;
         do {
@@ -360,7 +360,7 @@ class PHPDocTypesSniff implements Sniff {
             if ($this->token['code'] == T_FUNCTION) {
                 $type = 'function';
                 $this->advance(T_FUNCTION);
-            } else if ($this->token['code'] == T_CONST) {
+            } elseif ($this->token['code'] == T_CONST) {
                 $type = 'const';
                 $this->advance(T_CONST);
             }
@@ -382,12 +382,14 @@ class PHPDocTypesSniff implements Sniff {
                     if ($this->token['code'] == T_FUNCTION) {
                         $type = 'function';
                         $this->advance(T_FUNCTION);
-                    } else if ($this->token['code'] == T_CONST) {
+                    } elseif ($this->token['code'] == T_CONST) {
                         $type = 'const';
                         $this->advance(T_CONST);
                     }
-                    while ($this->token && in_array($this->token['code'],
-                                [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING])) {
+                    while (
+                                $this->token && in_array($this->token['code'],
+                                    [T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING])
+                            ) {
                         $namespaceend .= $this->token['content'];
                         $this->advance();
                     }
@@ -439,7 +441,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a classish thing.
      * @return void
      */
-    private function process_classish(): void {
+    private function processClassish(): void {
         $name = $this->file->getDeclarationName($this->fileptr);
         $name = $name ? end($this->scopes)->namespace . "\\" . $name : null;
         $parent = $this->file->findExtendedClassName($this->fileptr);
@@ -460,7 +462,7 @@ class PHPDocTypesSniff implements Sniff {
             (object)['type' => 'classish', 'classname' => $name, 'parentname' => $parent]));
         if ($this->pass == 1) {
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
-        } else if ($this->pass == 2) {
+        } elseif ($this->pass == 2) {
             if ($name && $this->comment && isset($this->comment->tags['@template'])) {
                 foreach ($this->comment->tags['@template'] as $template) {
                     $this->file->addWarning('Found template %s', $this->fileptr, 'debug', [$template]);
@@ -470,9 +472,11 @@ class PHPDocTypesSniff implements Sniff {
         }
         $this->advance();
         // Extends and implements.
-        while (in_array($this->token['code'],
-                [T_STRING, T_EXTENDS, T_IMPLEMENTS, T_COMMA,
-                    T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR])) {
+        while (
+                    in_array($this->token['code'],
+                        [T_STRING, T_EXTENDS, T_IMPLEMENTS, T_COMMA,
+                        T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR])
+                ) {
             $this->advance();
         }
         // Body start.
@@ -486,7 +490,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a function.
      * @return void
      */
-    private function process_function(): void {
+    private function processFunction(): void {
         // Check not anonymous.
         $name = $this->file->getDeclarationName($this->fileptr);
         $parameters = $this->file->getMethodParameters($this->fileptr);
@@ -577,7 +581,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a possible variable.
      * @return void
      */
-    private function process_variable(): void {
+    private function processVariable(): void {
 
         // Parse var/const token.
         $definitelyvar = false;
@@ -585,7 +589,7 @@ class PHPDocTypesSniff implements Sniff {
         if ($const) {
             $definitelyvar = true;
             $this->advance(T_CONST);
-        } else if ($this->token['code'] == T_VAR) {
+        } elseif ($this->token['code'] == T_VAR) {
             $definitelyvar = true;
             $this->advance(T_VAR);
         }
@@ -676,7 +680,7 @@ class PHPDocTypesSniff implements Sniff {
      * Process a declare.
      * @return void
      */
-    private function process_declare(): void {
+    private function processDeclare(): void {
 
         $this->advance(T_DECLARE);
         $this->advance(T_OPEN_PARENTHESIS);
@@ -704,7 +708,8 @@ class PHPDocTypesSniff implements Sniff {
 /**
  * Information about program scopes.
  */
-class Scope {
+class Scope
+{
 
     /** @var ?string the type of scope */
     public ?string $type = null;
@@ -760,7 +765,8 @@ class Scope {
 /**
  * Information about PHPDoc comments
  */
-class PHPDoc {
+class PHPDoc
+{
 
     /** @var array<string, string[]> */
     public array $tags = [];
@@ -777,10 +783,11 @@ class PHPDoc {
  * @copyright   2023 Otago Polytechnic
  * @author      James Calder
  */
-class type_parser {
+class TypeParser
+{
 
     /** @var array<non-empty-string, non-empty-string[]> predefined and SPL classes */
-    protected $library = [
+    protected array $library = [
         // Predefined general.
         "\\ArrayAccess" => [],
         "\\BackedEnum" => ["\\UnitEnum"],
@@ -877,31 +884,31 @@ class type_parser {
     ];
 
     /** @var string $namespace */
-    protected $namespace = "\\";
+    protected string $namespace = "\\";
 
     /** @var array<non-empty-string, non-empty-string> use aliases, aliases are keys, class names are values */
-    protected $usealiases;
+    protected array $usealiases;
 
     /** @var array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> inheritance heirarchy */
-    protected $artifacts;
+    protected array $artifacts;
 
     /** @var string the text to be parsed */
-    protected $text = '';
+    protected string $text = '';
 
     /** @var string the text to be parsed, with case retained */
-    protected $textwithcase = '';
+    protected string $textwithcase = '';
 
     /** @var bool when we encounter an unknown type, should we go wide or narrow */
-    protected $gowide = false;
+    protected bool $gowide = false;
 
     /** @var  array<string, string> type templates */
-    protected $templates = [];
+    protected array $templates = [];
 
     /** @var object{startpos: non-negative-int, endpos: non-negative-int, text: ?non-empty-string}[] next tokens */
-    protected $nexts = [];
+    protected array $nexts = [];
 
     /** @var ?non-empty-string the next token */
-    protected $next = null;
+    protected string $next = null;
 
     /**
      * Constructor
@@ -913,7 +920,6 @@ class type_parser {
 
     /**
      * Parse a type and possibly variable name
-     *
      * @param ?Scope $scope
      * @param string $text the text to parse
      * @param 0|1|2|3 $getwhat what to get 0=type only 1=also var 2=also modifiers (& ...) 3=also default
@@ -921,8 +927,8 @@ class type_parser {
      * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string, nullable: bool}
      *          the simplified type, variable, remaining text, and whether the type is explicitly nullable
      */
-    public function parse_type_and_var(?Scope $scope,
-            string $text, int $getwhat, bool $gowide): array {
+    public function parseTypeAndVar(?Scope $scope,
+            string $text, int $getwhat, bool $gowide): object {
 
         // Initialise variables.
         if ($scope) {
@@ -943,7 +949,7 @@ class type_parser {
         // Try to parse type.
         $savednexts = $this->nexts;
         try {
-            $type = $this->parse_any_type();
+            $type = $this->parseAnyType();
             $explicitnullable = strpos("|{$type}|", "|null|") !== false; // For code smell check.
             if (!($this->next == null || $getwhat >= 1
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
@@ -969,11 +975,11 @@ class type_parser {
                         // because the checker previously disallowed pass by reference & in PHPDocs,
                         // so adding this would be a nusiance for people who changed their PHPDocs
                         // to conform to the previous rules.
-                        $this->parse_token('&');
+                        $this->parseToken('&');
                     }
                     if ($this->next == '...') {
                         // Add to variable name for code smell check.
-                        $variable .= $this->parse_token('...');
+                        $variable .= $this->parseToken('...');
                     }
                 }
                 if (!($this->next != null && $this->next[0] == '$')) {
@@ -981,7 +987,7 @@ class type_parser {
                 }
                 $variable .= $this->next(0, true);
                 assert($variable != '');
-                $this->parse_token();
+                $this->parseToken();
                 if (!($this->next == null || $getwhat >= 3 && $this->next == '='
                         || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
                         || in_array($this->next, [',', ';', ':', '.']))) {
@@ -1008,13 +1014,12 @@ class type_parser {
 
     /**
      * Substitute owner and parent names
-     *
      * @param non-empty-string $type the simplified type
      * @param ?non-empty-string $ownername
      * @param ?non-empty-string $parentname
      * @return non-empty-string
      */
-    public static function substitute_names(string $type, ?string $ownername, ?string $parentname): string {
+    public static function substituteNames(string $type, ?string $ownername, ?string $parentname): string {
         if ($ownername) {
             $type = preg_replace('/\bself\b/', $ownername, $type);
             assert($type != null);
@@ -1030,15 +1035,14 @@ class type_parser {
 
     /**
      * Compare types
-     *
      * @param ?non-empty-string $widetype the type that should be wider, e.g. PHP type
      * @param ?non-empty-string $narrowtype the type that should be narrower, e.g. PHPDoc type
      * @return bool whether $narrowtype has the same or narrower scope as $widetype
      */
-    public function compare_types(?string $widetype, ?string $narrowtype): bool {
+    public function compareTypes(?string $widetype, ?string $narrowtype): bool {
         if ($narrowtype == null) {
             return false;
-        } else if ($widetype == null || $widetype == 'mixed' || $narrowtype == 'never') {
+        } elseif ($widetype == null || $widetype == 'mixed' || $narrowtype == 'never') {
             return true;
         }
 
@@ -1054,7 +1058,7 @@ class type_parser {
             $narrowadditions = [];
             foreach ($narrowsingles as $narrowsingle) {
                 assert($narrowsingle != '');
-                $supertypes = $this->super_types($narrowsingle);
+                $supertypes = $this->superTypes($narrowsingle);
                 $narrowadditions = array_merge($narrowadditions, $supertypes);
             }
             $narrowsingles = array_merge($narrowsingles, $narrowadditions);
@@ -1091,26 +1095,25 @@ class type_parser {
 
     /**
      * Get super types
-     *
      * @param non-empty-string $basetype
      * @return non-empty-string[] super types
      */
-    protected function super_types(string $basetype): array {
+    protected function superTypes(string $basetype): array {
         if (in_array($basetype, ['int', 'string'])) {
             $supertypes = ['array-key', 'scaler'];
-        } else if ($basetype == 'callable-string') {
+        } elseif ($basetype == 'callable-string') {
             $supertypes = ['callable', 'string', 'array-key', 'scalar'];
-        } else if (in_array($basetype, ['array-key', 'float', 'bool'])) {
+        } elseif (in_array($basetype, ['array-key', 'float', 'bool'])) {
             $supertypes = ['scalar'];
-        } else if ($basetype == 'array') {
+        } elseif ($basetype == 'array') {
             $supertypes = ['iterable'];
-        } else if ($basetype == 'static') {
+        } elseif ($basetype == 'static') {
             $supertypes = ['self', 'parent', 'object'];
-        } else if ($basetype == 'self') {
+        } elseif ($basetype == 'self') {
             $supertypes = ['parent', 'object'];
-        } else if ($basetype == 'parent') {
+        } elseif ($basetype == 'parent') {
             $supertypes = ['object'];
-        } else if (strpos($basetype, 'static(') === 0 || $basetype[0] == "\\") {
+        } elseif (strpos($basetype, 'static(') === 0 || $basetype[0] == "\\") {
             if (strpos($basetype, 'static(') === 0) {
                 $supertypes = ['static', 'self', 'parent', 'object'];
                 $supertypequeue = [substr($basetype, 7, -1)];
@@ -1130,7 +1133,7 @@ class type_parser {
                 }
                 if ($librarysupers = $this->library[$supertype] ?? null) {
                     $supertypequeue = array_merge($supertypequeue, $librarysupers);
-                } else if ($supertypeobj = $this->artifacts[$supertype] ?? null) {
+                } elseif ($supertypeobj = $this->artifacts[$supertype] ?? null) {
                     if ($supertypeobj->extends) {
                         $supertypequeue[] = $supertypeobj->extends;
                     }
@@ -1139,8 +1142,8 @@ class type_parser {
                             $supertypequeue[] = $implements;
                         }
                     }
-                } else if (!$ignore) {
-                    $supertypes = array_merge($supertypes, $this->super_types($supertype));
+                } elseif (!$ignore) {
+                    $supertypes = array_merge($supertypes, $this->superTypes($supertype));
                 }
                 $ignore = false;
             }
@@ -1153,7 +1156,6 @@ class type_parser {
 
     /**
      * Prefetch next token
-     *
      * @param non-negative-int $lookahead
      * @param bool $getcase
      * @return ?non-empty-string
@@ -1177,7 +1179,7 @@ class type_parser {
             if ($firstchar == null) {
                 // No more tokens.
                 $endpos = $startpos;
-            } else if (ctype_alpha($firstchar) || $firstchar == '_' || $firstchar == '$' || $firstchar == '\\') {
+            } elseif (ctype_alpha($firstchar) || $firstchar == '_' || $firstchar == '$' || $firstchar == '\\') {
                 // Identifier token.
                 $endpos = $startpos;
                 do {
@@ -1185,7 +1187,7 @@ class type_parser {
                     $nextchar = ($endpos < strlen($this->text)) ? $this->text[$endpos] : null;
                 } while ($nextchar != null && (ctype_alnum($nextchar) || $nextchar == '_'
                                             || $firstchar != '$' && ($nextchar == '-' || $nextchar == '\\')));
-            } else if (ctype_digit($firstchar)
+            } elseif (ctype_digit($firstchar)
                         || $firstchar == '-' && strlen($this->text) >= $startpos + 2 && ctype_digit($this->text[$startpos + 1])) {
                 // Number token.
                 $nextchar = $firstchar;
@@ -1196,7 +1198,7 @@ class type_parser {
                     $endpos = $endpos + 1;
                     $nextchar = ($endpos < strlen($this->text)) ? $this->text[$endpos] : null;
                 } while ($nextchar != null && (ctype_digit($nextchar) || $nextchar == '.' && !$havepoint || $nextchar == '_'));
-            } else if ($firstchar == '"' || $firstchar == '\'') {
+            } elseif ($firstchar == '"' || $firstchar == '\'') {
                 // String token.
                 $endpos = $startpos + 1;
                 $nextchar = ($endpos < strlen($this->text)) ? $this->text[$endpos] : null;
@@ -1213,10 +1215,10 @@ class type_parser {
                 } else {
                     $stringunterminated = true;
                 }
-            } else if (strlen($this->text) >= $startpos + 3 && substr($this->text, $startpos, 3) == '...') {
+            } elseif (strlen($this->text) >= $startpos + 3 && substr($this->text, $startpos, 3) == '...') {
                 // Splat.
                 $endpos = $startpos + 3;
-            } else if (strlen($this->text) >= $startpos + 2 && substr($this->text, $startpos, 2) == '::') {
+            } elseif (strlen($this->text) >= $startpos + 2 && substr($this->text, $startpos, 2) == '::') {
                 // Scope resolution operator.
                 $endpos = $startpos + 2;
             } else {
@@ -1241,18 +1243,17 @@ class type_parser {
 
     /**
      * Fetch the next token
-     *
      * @param ?non-empty-string $expect the expected text
      * @return non-empty-string
      */
-    protected function parse_token(?string $expect = null): string {
+    protected function parseToken(?string $expect = null): string {
 
         $next = $this->next;
 
         // Check we have the expected token.
         if ($expect != null && strtolower($next) != strtolower($expect)) {
             throw new \Exception("Error parsing type, expected \"{$expect}\", saw \"{$next}\".");
-        } else if ($next == null) {
+        } elseif ($next == null) {
             throw new \Exception("Error parsing type, unexpected end.");
         }
 
@@ -1267,26 +1268,25 @@ class type_parser {
 
     /**
      * Parse a list of types seperated by | and/or &, single nullable type, or conditional return type
-     *
      * @param bool $inbrackets are we immediately inside brackets?
      * @return non-empty-string the simplified type
      */
-    protected function parse_any_type(bool $inbrackets = false): string {
+    protected function parseAnyType(bool $inbrackets = false): string {
 
         if ($inbrackets && $this->next !== null && $this->next[0] == '$' && $this->next(1) == 'is') {
             // Conditional return type.
-            $this->parse_token();
-            $this->parse_token('is');
-            $this->parse_any_type();
-            $this->parse_token('?');
-            $firsttype = $this->parse_any_type();
-            $this->parse_token(':');
-            $secondtype = $this->parse_any_type();
+            $this->parseToken();
+            $this->parseToken('is');
+            $this->parseAnyType();
+            $this->parseToken('?');
+            $firsttype = $this->parseAnyType();
+            $this->parseToken(':');
+            $secondtype = $this->parseAnyType();
             $uniontypes = array_merge(explode('|', $firsttype), explode('|', $secondtype));
-        } else if ($this->next == '?') {
+        } elseif ($this->next == '?') {
             // Single nullable type.
-            $this->parse_token('?');
-            $uniontypes = explode('|', $this->parse_single_type());
+            $this->parseToken('?');
+            $uniontypes = explode('|', $this->parseSingleType());
             $uniontypes[] = 'null';
         } else {
             // Union list.
@@ -1296,7 +1296,7 @@ class type_parser {
                 $unioninstead = null;
                 $intersectiontypes = [];
                 do {
-                    $singletype = $this->parse_single_type();
+                    $singletype = $this->parseSingleType();
                     if (strpos($singletype, '|') !== false) {
                         $intersectiontypes[] = $this->gowide ? 'mixed' : 'never';
                         $unioninstead = $singletype;
@@ -1309,19 +1309,19 @@ class type_parser {
                         && !(in_array($nextnext, ['...', '=', ',', ')', null])
                             || $nextnext != null && $nextnext[0] == '$');
                     if ($havemoreintersections) {
-                        $this->parse_token('&');
+                        $this->parseToken('&');
                     }
                 } while ($havemoreintersections);
                 if (count($intersectiontypes) > 1 && $unioninstead !== null) {
                     throw new \Exception("Error parsing type, non-DNF.");
-                } else if (count($intersectiontypes) <= 1 && $unioninstead !== null) {
+                } elseif (count($intersectiontypes) <= 1 && $unioninstead !== null) {
                     $uniontypes = array_merge($uniontypes, explode('|', $unioninstead));
                 } else {
                     // Tidy and store intersection list.
                     if (count($intersectiontypes) > 1) {
                         foreach ($intersectiontypes as $intersectiontype) {
                             assert($intersectiontype != '');
-                            $supertypes = $this->super_types($intersectiontype);
+                            $supertypes = $this->superTypes($intersectiontype);
                             if (!(in_array($intersectiontype, ['object', 'iterable', 'callable'])
                                     || in_array('object', $supertypes))) {
                                 throw new \Exception("Error parsing type, intersection can only be used with objects.");
@@ -1349,7 +1349,7 @@ class type_parser {
                 // Check for more union items.
                 $havemoreunions = $this->next == '|';
                 if ($havemoreunions) {
-                    $this->parse_token('|');
+                    $this->parseToken('|');
                 }
             } while ($havemoreunions);
         }
@@ -1379,7 +1379,7 @@ class type_parser {
                 assert($uniontype != '');
                 foreach ($uniontypes as $key => $uniontype2) {
                     assert($uniontype2 != '');
-                    if ($uniontype2 != $uniontype && $this->compare_types($uniontype, $uniontype2)) {
+                    if ($uniontype2 != $uniontype && $this->compareTypes($uniontype, $uniontype2)) {
                         unset($uniontypes[$key]);
                     }
                 }
@@ -1393,21 +1393,20 @@ class type_parser {
 
     /**
      * Parse a single type, possibly array type
-     *
      * @return non-empty-string the simplified type
      */
-    protected function parse_single_type(): string {
+    protected function parseSingleType(): string {
         if ($this->next == '(') {
-            $this->parse_token('(');
-            $type = $this->parse_any_type(true);
-            $this->parse_token(')');
+            $this->parseToken('(');
+            $type = $this->parseAnyType(true);
+            $this->parseToken(')');
         } else {
-            $type = $this->parse_basic_type();
+            $type = $this->parseBasicType();
         }
         while ($this->next == '[' && $this->next(1) == ']') {
             // Array suffix.
-            $this->parse_token('[');
-            $this->parse_token(']');
+            $this->parseToken('[');
+            $this->parseToken(']');
             $type = 'array';
         }
         return $type;
@@ -1415,10 +1414,9 @@ class type_parser {
 
     /**
      * Parse a basic type
-     *
      * @return non-empty-string the simplified type
      */
-    protected function parse_basic_type(): string {
+    protected function parseBasicType(): string {
         // TODO: Substitute class and parent in here?
 
         $next = $this->next;
@@ -1429,212 +1427,230 @@ class type_parser {
 
         if (in_array(strtolower($next), ['bool', 'boolean', 'true', 'false'])) {
             // Bool.
-            $this->parse_token();
+            $this->parseToken();
             $type = 'bool';
-        } else if (in_array(strtolower($next), ['int', 'integer', 'positive-int', 'negative-int',
+        } elseif (
+                    in_array(strtolower($next), ['int', 'integer', 'positive-int', 'negative-int',
                                                 'non-positive-int', 'non-negative-int',
                                                 'int-mask', 'int-mask-of', ])
-                || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') === false) {
+                    || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') === false
+                ) {
             // Int.
-            $inttype = strtolower($this->parse_token());
+            $inttype = strtolower($this->parseToken());
             if ($inttype == 'int' && $this->next == '<') {
                 // Integer range.
-                $this->parse_token('<');
+                $this->parseToken('<');
                 $next = $this->next;
-                if ($next == null
-                        || !(strtolower($next) == 'min' || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)) {
+                if (
+                            $next == null
+                                || !(strtolower($next) == 'min'
+                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                        ) {
                     throw new \Exception("Error parsing type, expected int min, saw \"{$next}\".");
                 }
-                $this->parse_token();
-                $this->parse_token(',');
+                $this->parseToken();
+                $this->parseToken(',');
                 $next = $this->next;
-                if ($next == null
-                        || !(strtolower($next) == 'max' || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)) {
+                if (
+                            $next == null
+                                || !(strtolower($next) == 'max'
+                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                        ) {
                     throw new \Exception("Error parsing type, expected int max, saw \"{$next}\".");
                 }
-                $this->parse_token();
-                $this->parse_token('>');
-            } else if ($inttype == 'int-mask') {
+                $this->parseToken();
+                $this->parseToken('>');
+            } elseif ($inttype == 'int-mask') {
                 // Integer mask.
-                $this->parse_token('<');
+                $this->parseToken('<');
                 do {
-                    $mask = $this->parse_basic_type();
-                    if (!$this->compare_types('int', $mask)) {
+                    $mask = $this->parseBasicType();
+                    if (!$this->compareTypes('int', $mask)) {
                         throw new \Exception("Error parsing type, invalid int mask.");
                     }
                     $haveseperator = $this->next == ',';
                     if ($haveseperator) {
-                        $this->parse_token(',');
+                        $this->parseToken(',');
                     }
                 } while ($haveseperator);
-                $this->parse_token('>');
-            } else if ($inttype == 'int-mask-of') {
+                $this->parseToken('>');
+            } elseif ($inttype == 'int-mask-of') {
                 // Integer mask of.
-                $this->parse_token('<');
-                $mask = $this->parse_basic_type();
-                if (!$this->compare_types('int', $mask)) {
+                $this->parseToken('<');
+                $mask = $this->parseBasicType();
+                if (!$this->compareTypes('int', $mask)) {
                     throw new \Exception("Error parsing type, invalid int mask.");
                 }
-                $this->parse_token('>');
+                $this->parseToken('>');
             }
             $type = 'int';
-        } else if (in_array(strtolower($next), ['float', 'double'])
-                || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') !== false) {
+        } elseif (
+                    in_array(strtolower($next), ['float', 'double'])
+                    || (ctype_digit($nextchar) || $nextchar == '-') && strpos($next, '.') !== false
+                ) {
             // Float.
-            $this->parse_token();
+            $this->parseToken();
             $type = 'float';
-        } else if (in_array(strtolower($next), ['string', 'class-string', 'numeric-string', 'literal-string',
+        } elseif (
+                    in_array(strtolower($next), ['string', 'class-string', 'numeric-string', 'literal-string',
                                                 'non-empty-string', 'non-falsy-string', 'truthy-string', ])
-                    || $nextchar == '"' || $nextchar == '\'') {
+                    || $nextchar == '"' || $nextchar == '\''
+                ) {
             // String.
-            $strtype = strtolower($this->parse_token());
+            $strtype = strtolower($this->parseToken());
             if ($strtype == 'class-string' && $this->next == '<') {
-                $this->parse_token('<');
-                $stringtype = $this->parse_any_type();
-                if (!$this->compare_types('object', $stringtype)) {
+                $this->parseToken('<');
+                $stringtype = $this->parseAnyType();
+                if (!$this->compareTypes('object', $stringtype)) {
                     throw new \Exception("Error parsing type, class-string type isn't class.");
                 }
-                $this->parse_token('>');
+                $this->parseToken('>');
             }
             $type = 'string';
-        } else if (strtolower($next) == 'callable-string') {
+        } elseif (strtolower($next) == 'callable-string') {
             // Callable-string.
-            $this->parse_token('callable-string');
+            $this->parseToken('callable-string');
             $type = 'callable-string';
-        } else if (in_array(strtolower($next), ['array', 'non-empty-array', 'list', 'non-empty-list'])) {
+        } elseif (in_array(strtolower($next), ['array', 'non-empty-array', 'list', 'non-empty-list'])) {
             // Array.
-            $arraytype = strtolower($this->parse_token());
+            $arraytype = strtolower($this->parseToken());
             if ($this->next == '<') {
                 // Typed array.
-                $this->parse_token('<');
-                $firsttype = $this->parse_any_type();
+                $this->parseToken('<');
+                $firsttype = $this->parseAnyType();
                 if ($this->next == ',') {
                     if (in_array($arraytype, ['list', 'non-empty-list'])) {
                         throw new \Exception("Error parsing type, lists cannot have keys specified.");
                     }
                     $key = $firsttype;
-                    if (!$this->compare_types('array-key', $key)) {
+                    if (!$this->compareTypes('array-key', $key)) {
                         throw new \Exception("Error parsing type, invalid array key.");
                     }
-                    $this->parse_token(',');
-                    $value = $this->parse_any_type();
+                    $this->parseToken(',');
+                    $value = $this->parseAnyType();
                 } else {
                     $key = null;
                     $value = $firsttype;
                 }
-                $this->parse_token('>');
-            } else if ($this->next == '{') {
+                $this->parseToken('>');
+            } elseif ($this->next == '{') {
                 // Array shape.
                 if (in_array($arraytype, ['non-empty-array', 'non-empty-list'])) {
                     throw new \Exception("Error parsing type, non-empty-arrays cannot have shapes.");
                 }
-                $this->parse_token('{');
+                $this->parseToken('{');
                 do {
                     $next = $this->next;
-                    if ($next != null
-                            && (ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"'
-                                || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
-                            && ($this->next(1) == ':' || $this->next(1) == '?' && $this->next(2) == ':')) {
-                        $this->parse_token();
+                    if (
+                                $next != null
+                                && (ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"'
+                                    || (ctype_digit($next[0]) || $next[0] == '-') && strpos($next, '.') === false)
+                                && ($this->next(1) == ':' || $this->next(1) == '?' && $this->next(2) == ':')
+                            ) {
+                        $this->parseToken();
                         if ($this->next == '?') {
-                            $this->parse_token('?');
+                            $this->parseToken('?');
                         }
-                        $this->parse_token(':');
+                        $this->parseToken(':');
                     }
-                    $this->parse_any_type();
+                    $this->parseAnyType();
                     $havecomma = $this->next == ',';
                     if ($havecomma) {
-                        $this->parse_token(',');
+                        $this->parseToken(',');
                     }
                 } while ($havecomma);
-                $this->parse_token('}');
+                $this->parseToken('}');
             }
             $type = 'array';
-        } else if (strtolower($next) == 'object') {
+        } elseif (strtolower($next) == 'object') {
             // Object.
-            $this->parse_token('object');
+            $this->parseToken('object');
             if ($this->next == '{') {
                 // Object shape.
-                $this->parse_token('{');
+                $this->parseToken('{');
                 do {
                     $next = $this->next;
-                    if ($next == null
-                        || !(ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"')) {
+                    if (
+                            $next == null
+                            || !(ctype_alpha($next) || $next[0] == '_' || $next[0] == '\'' || $next[0] == '"')
+                        ) {
                         throw new \Exception("Error parsing type, invalid object key.");
                     }
-                    $this->parse_token();
+                    $this->parseToken();
                     if ($this->next == '?') {
-                        $this->parse_token('?');
+                        $this->parseToken('?');
                     }
-                    $this->parse_token(':');
-                    $this->parse_any_type();
+                    $this->parseToken(':');
+                    $this->parseAnyType();
                     $havecomma = $this->next == ',';
                     if ($havecomma) {
-                        $this->parse_token(',');
+                        $this->parseToken(',');
                     }
                 } while ($havecomma);
-                $this->parse_token('}');
+                $this->parseToken('}');
             }
             $type = 'object';
-        } else if (strtolower($next) == 'resource') {
+        } elseif (strtolower($next) == 'resource') {
             // Resource.
-            $this->parse_token('resource');
+            $this->parseToken('resource');
             $type = 'resource';
-        } else if (in_array(strtolower($next), ['never', 'never-return', 'never-returns', 'no-return'])) {
+        } elseif (in_array(strtolower($next), ['never', 'never-return', 'never-returns', 'no-return'])) {
             // Never.
-            $this->parse_token();
+            $this->parseToken();
             $type = 'never';
-        } else if (strtolower($next) == 'null') {
+        } elseif (strtolower($next) == 'null') {
             // Null.
-            $this->parse_token('null');
+            $this->parseToken('null');
             $type = 'null';
-        } else if (strtolower($next) == 'void') {
+        } elseif (strtolower($next) == 'void') {
             // Void.
-            $this->parse_token('void');
+            $this->parseToken('void');
             $type = 'void';
-        } else if (strtolower($next) == 'self') {
+        } elseif (strtolower($next) == 'self') {
             // Self.
-            $this->parse_token('self');
+            $this->parseToken('self');
             $type = 'self';
-        } else if (strtolower($next) == 'parent') {
+        } elseif (strtolower($next) == 'parent') {
             // Parent.
-            $this->parse_token('parent');
+            $this->parseToken('parent');
             $type = 'parent';
-        } else if (in_array(strtolower($next), ['static', '$this'])) {
+        } elseif (in_array(strtolower($next), ['static', '$this'])) {
             // Static.
-            $this->parse_token();
+            $this->parseToken();
             $type = 'static';
-        } else if (strtolower($next) == 'callable'
-                || $next == "\\Closure" || $next == 'Closure' && $this->namespace == "\\") {
+        } elseif (
+                    strtolower($next) == 'callable'
+                    || $next == "\\Closure" || $next == 'Closure' && $this->namespace == "\\"
+                ) {
             // Callable.
-            $callabletype = $this->parse_token();
+            $callabletype = $this->parseToken();
             if ($this->next == '(') {
-                $this->parse_token('(');
+                $this->parseToken('(');
                 while ($this->next != ')') {
-                    $this->parse_any_type();
+                    $this->parseAnyType();
                     if ($this->next == '&') {
-                        $this->parse_token('&');
+                        $this->parseToken('&');
                     }
                     if ($this->next == '...') {
-                        $this->parse_token('...');
+                        $this->parseToken('...');
                     }
                     if ($this->next == '=') {
-                        $this->parse_token('=');
+                        $this->parseToken('=');
                     }
                     $nextchar = ($this->next != null) ? $this->next[0] : null;
                     if ($nextchar == '$') {
-                        $this->parse_token();
+                        $this->parseToken();
                     }
                     if ($this->next != ')') {
-                        $this->parse_token(',');
+                        $this->parseToken(',');
                     }
                 }
-                $this->parse_token(')');
-                $this->parse_token(':');
+                $this->parseToken(')');
+                $this->parseToken(':');
                 if ($this->next == '?') {
-                    $this->parse_any_type();
+                    $this->parseAnyType();
                 } else {
-                    $this->parse_single_type();
+                    $this->parseSingleType();
                 }
             }
             if (strtolower($callabletype) == 'callable') {
@@ -1642,59 +1658,61 @@ class type_parser {
             } else {
                 $type = "\\Closure";
             }
-        } else if (strlower($next) == 'mixed') {
+        } elseif (strlower($next) == 'mixed') {
             // Mixed.
-            $this->parse_token('mixed');
+            $this->parseToken('mixed');
             $type = 'mixed';
-        } else if (strtolower($next) == 'iterable') {
+        } elseif (strtolower($next) == 'iterable') {
             // Iterable (Traversable|array).
-            $this->parse_token('iterable');
+            $this->parseToken('iterable');
             if ($this->next == '<') {
-                $this->parse_token('<');
-                $firsttype = $this->parse_any_type();
+                $this->parseToken('<');
+                $firsttype = $this->parseAnyType();
                 if ($this->next == ',') {
                     $key = $firsttype;
-                    $this->parse_token(',');
-                    $value = $this->parse_any_type();
+                    $this->parseToken(',');
+                    $value = $this->parseAnyType();
                 } else {
                     $key = null;
                     $value = $firsttype;
                 }
-                $this->parse_token('>');
+                $this->parseToken('>');
             }
             $type = 'iterable';
-        } else if (strtolower($next) == 'array-key') {
+        } elseif (strtolower($next) == 'array-key') {
             // Array-key (int|string).
-            $this->parse_token('array-key');
+            $this->parseToken('array-key');
             $type = 'array-key';
-        } else if (strtolower($next) == 'scalar') {
+        } elseif (strtolower($next) == 'scalar') {
             // Scalar can be (bool|int|float|string).
-            $this->parse_token('scalar');
+            $this->parseToken('scalar');
             $type = 'scalar';
-        } else if (strtolower($next) == 'key-of') {
+        } elseif (strtolower($next) == 'key-of') {
             // Key-of.
-            $this->parse_token('key-of');
-            $this->parse_token('<');
-            $iterable = $this->parse_any_type();
-            if (!($this->compare_types('iterable', $iterable) || $this->compare_types('object', $iterable))) {
+            $this->parseToken('key-of');
+            $this->parseToken('<');
+            $iterable = $this->parseAnyType();
+            if (!($this->compareTypes('iterable', $iterable) || $this->compareTypes('object', $iterable))) {
                 throw new \Exception("Error parsing type, can't get key of non-iterable.");
             }
-            $this->parse_token('>');
+            $this->parseToken('>');
             $type = $this->gowide ? 'mixed' : 'never';
-        } else if (strtolower($next) == 'value-of') {
+        } elseif (strtolower($next) == 'value-of') {
             // Value-of.
-            $this->parse_token('value-of');
-            $this->parse_token('<');
-            $iterable = $this->parse_any_type();
-            if (!($this->compare_types('iterable', $iterable) || $this->compare_types('object', $iterable))) {
+            $this->parseToken('value-of');
+            $this->parseToken('<');
+            $iterable = $this->parseAnyType();
+            if (!($this->compareTypes('iterable', $iterable) || $this->compareTypes('object', $iterable))) {
                 throw new \Exception("Error parsing type, can't get value of non-iterable.");
             }
-            $this->parse_token('>');
+            $this->parseToken('>');
             $type = $this->gowide ? 'mixed' : 'never';
-        } else if ((ctype_alpha($next[0]) || $next[0] == '_' || $next[0] == '\\')
-                && strpos($next, '-') === false && strpos($next, '\\\\') === false) {
+        } elseif (
+                    (ctype_alpha($next[0]) || $next[0] == '_' || $next[0] == '\\')
+                    && strpos($next, '-') === false && strpos($next, '\\\\') === false
+                ) {
             // Class name.
-            $type = $this->parse_token();
+            $type = $this->parseToken();
             if ($type[0] != "\\") {
                 $type = $this->namespace . $type;
             }
@@ -1704,19 +1722,19 @@ class type_parser {
             assert($type != '');
             if ($this->templates[$type] ?? null) {
                 $type = $this->templates[$type];
-            } else if ($this->next == '<') {
+            } elseif ($this->next == '<') {
                 // Collection / Traversable.
-                $this->parse_token('<');
-                $firsttype = $this->parse_any_type();
+                $this->parseToken('<');
+                $firsttype = $this->parseAnyType();
                 if ($this->next == ',') {
                     $key = $firsttype;
-                    $this->parse_token(',');
-                    $value = $this->parse_any_type();
+                    $this->parseToken(',');
+                    $value = $this->parseAnyType();
                 } else {
                     $key = null;
                     $value = $firsttype;
                 }
-                $this->parse_token('>');
+                $this->parseToken('>');
             }
         } else {
             throw new \Exception("Error parsing type, unrecognised type.");
@@ -1724,21 +1742,20 @@ class type_parser {
 
         // Suffix.
         // We can't embed this in the class name section, because it could apply to relative classes.
-        if ($this->next == '::' && (in_array('object', $this->super_types($type)))) {
+        if ($this->next == '::' && (in_array('object', $this->superTypes($type)))) {
             // Class constant.
-            $this->parse_token('::');
+            $this->parseToken('::');
             $nextchar = ($this->next == null) ? null : $this->next[0];
             $haveconstantname = $nextchar != null && (ctype_alpha($nextchar) || $nextchar == '_');
             if ($haveconstantname) {
-                $this->parse_token();
+                $this->parseToken();
             }
             if ($this->next == '*' || !$haveconstantname) {
-                $this->parse_token('*');
+                $this->parseToken('*');
             }
             $type = $this->gowide ? 'mixed' : 'never';
         }
 
         return $type;
     }
-
 }
