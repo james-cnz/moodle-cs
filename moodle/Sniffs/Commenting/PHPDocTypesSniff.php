@@ -34,31 +34,31 @@ use PHP_CodeSniffer\Files\File;
 class PHPDocTypesSniff implements Sniff
 {
     /** @var ?File the current file */
-    private ?File $file = null;
+    protected ?File $file = null;
 
     /** @var array[] file tokens */
-    private array $tokens = [];
+    protected array $tokens = [];
 
     /** @var array<string, object{extends: ?string, implements: string[]}> */
-    private array $artifacts = [];
+    protected array $artifacts = [];
 
     /** @var ?PHPDocTypeParser */
-    private ?PHPDocTypeParser $typeparser = null;
+    protected ?PHPDocTypeParser $typeparser = null;
 
     /** @var int */
-    private int $pass = 0;
+    protected int $pass = 0;
 
     /** @var int pointer in the file */
-    private int $fileptr = 0;
+    protected int $fileptr = 0;
 
     /** @var Scope[] stack of scopes */
-    private array $scopes = [];
+    protected array $scopes = [];
 
     /** @var ?PHPDoc PHPDoc comment for upcoming declaration */
-    private ?PHPDoc $comment = null;
+    protected ?PHPDoc $comment = null;
 
     /** @var array<string, mixed> the current token */
-    private array $token = ['code' => null, 'content' => ''];
+    protected array $token = ['code' => null, 'content' => ''];
 
     /**
      * Register for open tag (only process once per file).
@@ -89,7 +89,7 @@ class PHPDocTypesSniff implements Sniff
         $this->fileptr = $stackptr;
         $this->scopes = [new Scope(
             (object)['type' => 'root', 'namespace' => "\\", 'uses' => [], 'templates' => [],
-            'classname' => null, 'parent' => null, 'opened' => true, 'closer' => null]
+            'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]
         )];
         $this->fetchToken();
         $this->comment = null;
@@ -100,7 +100,7 @@ class PHPDocTypesSniff implements Sniff
         $this->fileptr = $stackptr;
         $this->scopes = [new Scope(
             (object)['type' => 'root', 'namespace' => "\\", 'uses' => [], 'templates' => [],
-            'classname' => null, 'parent' => null, 'opened' => true, 'closer' => null]
+            'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]
         )];
         $this->fetchToken();
         $this->comment = null;
@@ -111,7 +111,7 @@ class PHPDocTypesSniff implements Sniff
      * A pass over the file.
      * @return void
      */
-    public function processPass(): void {
+    protected function processPass(): void {
 
         while ($this->token['code']) {
             try {
@@ -282,7 +282,7 @@ class PHPDocTypesSniff implements Sniff
      * Fetch the current tokens.
      * @return void
      */
-    private function fetchToken(): void {
+    protected function fetchToken(): void {
         $this->token = ($this->fileptr < count($this->tokens)) ? $this->tokens[$this->fileptr] : ['code' => null, 'content' => ''];
     }
 
@@ -292,7 +292,7 @@ class PHPDocTypesSniff implements Sniff
      * @param bool $skipphpdoc
      * @return void
      */
-    private function advance($expectedcode = null, $skipphpdoc = true): void {
+    protected function advance($expectedcode = null, $skipphpdoc = true): void {
         if ($expectedcode && $this->token['code'] != $expectedcode || $this->token['code'] == null) {
             throw new \Exception();
         }
@@ -317,7 +317,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a PHPDoc comment.
      * @return void
      */
-    private function processComment(): void {
+    protected function processComment(): void {
         $this->comment = new PHPDoc((object)['tags' => []]);
         while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
             $tagtype = null;
@@ -348,7 +348,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a namespace declaration.
      * @return void
      */
-    private function processNamespace(): void {
+    protected function processNamespace(): void {
         $this->advance(T_NAMESPACE);
         $namespace = '';
         while (
@@ -385,7 +385,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a use declaration.
      * @return void
      */
-    private function processUse(): void {
+    protected function processUse(): void {
         $this->advance(T_USE);
         $more = false;
         do {
@@ -481,7 +481,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a classish thing.
      * @return void
      */
-    private function processClassish(): void {
+    protected function processClassish(): void {
         $name = $this->file->getDeclarationName($this->fileptr);
         $name = $name ? end($this->scopes)->namespace . "\\" . $name : null;
         $parent = $this->file->findExtendedClassName($this->fileptr);
@@ -538,11 +538,12 @@ class PHPDocTypesSniff implements Sniff
      * Process a function.
      * @return void
      */
-    private function processFunction(): void {
+    protected function processFunction(): void {
         // Check not anonymous.
         $name = $this->file->getDeclarationName($this->fileptr);
         $parameters = $this->file->getMethodParameters($this->fileptr);
         $properties = $this->file->getMethodProperties($this->fileptr);
+        // TODO: Can templates be defined here?
         $oldscope = end($this->scopes);
         array_push($this->scopes, $newscope = clone $oldscope);
         $newscope->type = 'function';
@@ -656,7 +657,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a possible variable.
      * @return void
      */
-    private function processVariable(): void {
+    protected function processVariable(): void {
 
         // Parse var/const token.
         $definitelyvar = false;
@@ -765,7 +766,7 @@ class PHPDocTypesSniff implements Sniff
      * Process a declare.
      * @return void
      */
-    private function processDeclare(): void {
+    protected function processDeclare(): void {
 
         $this->advance(T_DECLARE);
         $this->advance(T_OPEN_PARENTHESIS);
@@ -795,7 +796,7 @@ class PHPDocTypesSniff implements Sniff
 /**
  * Information about program scopes.
  */
-class Scope
+final class Scope
 {
     /** @var ?string the type of scope */
     public ?string $type = null;
@@ -823,7 +824,7 @@ class Scope
 
     /**
      * Construct scope information
-     * @param object{type: ?string, namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $data
+     * @param object{type: ?string, namespace: string, uses: string[], templates: string[]} $data
      */
     public function __construct(object $data) {
         $this->type = $data->type;
@@ -840,7 +841,7 @@ class Scope
 /**
  * Information about PHPDoc comments
  */
-class PHPDoc
+final class PHPDoc
 {
     /** @var array<string, string[]> */
     public array $tags = [];
@@ -1103,6 +1104,7 @@ class PHPDocTypeParser
      * @return non-empty-string
      */
     public static function substituteNames(string $type, ?string $ownername, ?string $parentname): string {
+        // TODO: Make protected, use internally?
         if ($ownername) {
             $type = preg_replace('/\bself\b/', $ownername, $type);
             assert($type != null);
@@ -1743,7 +1745,7 @@ class PHPDocTypeParser
             } else {
                 $type = "\\Closure";
             }
-        } elseif (strlower($next) == 'mixed') {
+        } elseif (strtolower($next) == 'mixed') {
             // Mixed.
             $this->parseToken('mixed');
             $type = 'mixed';
@@ -1799,16 +1801,18 @@ class PHPDocTypeParser
             // Class name.
             $type = $this->parseToken();
             if ($type[0] != "\\") {
-                $type = $this->namespace . $type;
+                // TODO: What's the correct order for this?
+                if (array_key_exists($type, $this->usealiases)) {
+                    $type = $this->usealiases[$type];
+                    assert($type != '');
+                } elseif ($this->templates[$type] ?? null) {
+                    $type = $this->templates[$type];
+                } else {
+                    $type = $this->namespace . $type;
+                }
             }
-            if (array_key_exists($type, $this->usealiases)) {
-                $type = $this->usealiases[$type];
-            }
-            assert($type != '');
-            if ($this->templates[$type] ?? null) {
-                $type = $this->templates[$type];
-            } elseif ($this->next == '<') {
-                // Collection / Traversable.
+            if ($this->next == '<') {
+                // Collection / Traversable.  // TODO: Could be any generic?
                 $this->parseToken('<');
                 $firsttype = $this->parseAnyType();
                 if ($this->next == ',') {
