@@ -823,9 +823,9 @@ class Scope
 
     /**
      * Construct scope information
-     * @param object{type: ?string, namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string, opened: bool, closer: int} $data
+     * @param object{type: ?string, namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $data
      */
-    public function __construct(?Scope $oldscope = null, object $data) {
+    public function __construct(object $data) {
         $this->type = $data->type;
         $this->namespace = $data->namespace;
         $this->uses = $data->uses;
