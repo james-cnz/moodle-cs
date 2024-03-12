@@ -64,5 +64,35 @@ final class PHPDocTypeParserTest extends TestCase
             $typeparser->parseTypeAndVar(null, '234|-234|int-mask<1, 2, 4>', 0, false)->type,
             'int'
         );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, '1_000|-1_000|int-mask<types_valid::INT_ONE, types_valid::INT_TWO>', 0, false)->type,
+            'int'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'int-mask-of<types_valid::INT_*>|int-mask-of<key-of<types_valid::ARRAY_CONST>>', 0, false)->type,
+            'int'
+        );
+        // Float types
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'float|double|1.0|-1.0', 0, false)->type,
+            'int'
+        );
+        // String types
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'string|class-string|class-string<types_valid>', 0, false)->type,
+            'string'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'callable-string|numeric-string|non-empty-string|non-falsy-string|truthy-string|literal-string', 0, false)->type,
+            'string'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, "'foo'|'bar'", 0, false)->type,
+            'string'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, "class-string<types_valid|types_valid_interface>|'\\''", 0, false)->type,
+            'string'
+        );
     }
 }
