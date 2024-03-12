@@ -435,13 +435,8 @@ class PHPDocTypesSniff implements Sniff
                     }
                     $namespace = $namespacestart . $namespaceend;
                     $alias = substr($namespace, strrpos($namespace, "\\") + 1);
-                    if ($this->token && $this->token['code'] == T_AS) {
-                        $this->advance(T_AS);
-                        if ($this->token && $this->token['code'] == T_STRING) {
-                            $alias = $this->token['content'];
-                            $this->advance(T_STRING);
-                        }
-                    }
+                    $asalias = $this->processUseAsAlias();
+                    $alias = $asalias ?? $alias;
                     if ($this->pass == 2 && $type == 'class') {
                         end($this->scopes)->uses[$alias] = $namespace;
                         //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
@@ -460,13 +455,8 @@ class PHPDocTypesSniff implements Sniff
                 $alias = (strrpos($namespace, "\\") !== null) ?
                     substr($namespace, strrpos($namespace, "\\") + 1)
                     : $namespace;
-                if ($this->token && $this->token['code'] == T_AS) {
-                    $this->advance(T_AS);
-                    if ($this->token && $this->token['code'] == T_STRING) {
-                        $alias = $this->token['content'];
-                        $this->advance(T_STRING);
-                    }
-                }
+                $asalias = $this->processUseAsAlias();
+                $alias = $asalias ?? $alias;
                 if ($this->pass == 2 && $type == 'class') {
                     end($this->scopes)->uses[$alias] = $namespace;
                     //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
@@ -478,6 +468,22 @@ class PHPDocTypesSniff implements Sniff
             }
         } while ($more);
         $this->advance(T_SEMICOLON, false);
+    }
+
+    /**
+     * Process a use as alias.
+     * @return ?string
+     */
+    protected function processUseAsAlias(): ?string {
+        $alias = null;
+        if ($this->token && $this->token['code'] == T_AS) {
+            $this->advance(T_AS);
+            if ($this->token && $this->token['code'] == T_STRING) {
+                $alias = $this->token['content'];
+                $this->advance(T_STRING);
+            }
+        }
+        return $alias;
     }
 
     /**
@@ -639,7 +645,8 @@ class PHPDocTypesSniff implements Sniff
                         $this->fileptr,
                         'phpdoc_fun_ret_missing'
                     );
-                } else*/if (count($this->comment->tags['@return']) > 1) {
+                } else*/
+                if (count($this->comment->tags['@return']) > 1) {
                     $this->file->addError(
                         'PHPDoc multiple function return types--Put in one tag, seperated by vertical bars |',
                         $this->fileptr,
@@ -832,7 +839,7 @@ class PHPDocTypesSniff implements Sniff
                                 'phpdoc_var_type',
                                 [$varnum + 1]
                             );
-                        } else if (!$this->typeparser->comparetypes($vardata->type, $docvardata->type)) {
+                        } elseif (!$this->typeparser->comparetypes($vardata->type, $docvardata->type)) {
                             $this->file->addError(
                                 'PHPDoc var type mismatch',
                                 $this->fileptr,

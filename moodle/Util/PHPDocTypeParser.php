@@ -184,7 +184,7 @@ class PHPDocTypeParser
             $type = $this->parseAnyType();
             $explicitnullable = strpos("|{$type}|", "|null|") !== false; // For code smell check.
             if (
-                !($this->next == null || $getwhat >= 1
+                !($this->next == null || $getwhat >= 1 // TODO: Always require space?
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
                     || in_array($this->next, [',', ';', ':', '.']))
             ) {
@@ -997,6 +997,9 @@ class PHPDocTypeParser
         ) {
             // Class name.
             $type = $this->parseToken();
+            if (strrpos($type, "\\") === strlen($type) - 1) {
+                throw new \Exception("Error parsing type, class name has trailing slash.");
+            }
             if ($type[0] != "\\") {
                 // TODO: What's the correct order for this?
                 if (array_key_exists($type, $this->scope->uses)) {
