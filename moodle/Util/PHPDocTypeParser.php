@@ -133,7 +133,7 @@ class PHPDocTypeParser
     /** @var array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> inheritance heirarchy */
     protected array $artifacts;
 
-    /** @var object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string} */
+    /** @var object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} */
     protected object $scope;
 
     /** @var string the text to be parsed */
@@ -158,7 +158,7 @@ class PHPDocTypeParser
 
     /**
      * Parse a type and possibly variable name
-     * @param ?object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string} $scope
+     * @param ?object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $scope
      * @param string $text the text to parse
      * @param 0|1|2|3 $getwhat what to get 0=type only 1=also var 2=also modifiers (& ...) 3=also default
      * @param bool $gowide if we can't determine the type, should we assume wide (for native type) or narrow (for PHPDoc)?
@@ -250,7 +250,7 @@ class PHPDocTypeParser
 
     /**
      * Parse a template
-     * @param ?object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string} $scope
+     * @param ?object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $scope
      * @param string $text the text to parse
      * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string}
      *          the simplified type, variable, and remaining text

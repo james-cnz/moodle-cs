@@ -32,6 +32,9 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
 {
     /**
      * @dataProvider provider
+     * @param string $fixture
+     * @param array $errors
+     * @param array $warnings
      */
     public function testPHPDocTypesCorrectness(
         string $fixture,

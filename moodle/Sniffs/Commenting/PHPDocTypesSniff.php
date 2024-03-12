@@ -52,10 +52,10 @@ class PHPDocTypesSniff implements Sniff
     /** @var int pointer in the file */
     protected int $fileptr = 0;
 
-    /** @var object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string}[] scopes */
+    /** @var object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string}[] scopes */
     protected array $scopes = [];
 
-    /** @var ?object{tags: array<string, string[]} PHPDoc comment for upcoming declaration */
+    /** @var ?object{tags: array<string, string[]>} PHPDoc comment for upcoming declaration */
     protected ?object $comment = null;
 
     /** @var array<string, mixed> the current token */
