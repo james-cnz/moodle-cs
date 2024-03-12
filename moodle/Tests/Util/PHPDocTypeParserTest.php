@@ -42,8 +42,26 @@ final class PHPDocTypeParserTest extends TestCase
     public function testValidTypes()
     {
         $typeparser = new PHPDocTypeParser(null);
+        // Boolean types
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'bool|boolean|true|false', 0, false)->type,
+            'bool'
+        );
+        // Integer types
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'int|integer', 0, false)->type,
+            'int'
+        );
         $this->assertSame(
             $typeparser->parseTypeAndVar(null, 'positive-int|negative-int|non-positive-int|non-negative-int', 0, false)->type,
+            'int'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'int<0, 100>|int<min, 100>|int<50, max>|int<-100, max>', 0, false)->type,
+            'int'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, '234|-234|int-mask<1, 2, 4>', 0, false)->type,
             'int'
         );
     }
