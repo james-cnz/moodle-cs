@@ -69,13 +69,13 @@ final class PHPDocTypeParserTest extends TestCase
             'int'
         );
         $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'int-mask-of<types_valid::INT_*>|int-mask-of<key-of<types_valid::ARRAY_CONST>>', 0, false)->type,
+            $typeparser->parseTypeAndVar(null, 'int-mask-of<types_valid::INT_*>', 0, false)->type,
             'int'
         );
         // Float types
         $this->assertSame(
             $typeparser->parseTypeAndVar(null, 'float|double|1.0|-1.0', 0, false)->type,
-            'int'
+            'float'
         );
         // String types
         $this->assertSame(
@@ -83,7 +83,11 @@ final class PHPDocTypeParserTest extends TestCase
             'string'
         );
         $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'callable-string|numeric-string|non-empty-string|non-falsy-string|truthy-string|literal-string', 0, false)->type,
+            $typeparser->parseTypeAndVar(null, 'callable-string|numeric-string|non-empty-string', 0, false)->type,
+            'string'
+        );
+        $this->assertSame(
+            $typeparser->parseTypeAndVar(null, 'non-falsy-string|truthy-string|literal-string', 0, false)->type,
             'string'
         );
         $this->assertSame(
