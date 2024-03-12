@@ -43,7 +43,7 @@ final class PHPDocTypeParserTest extends TestCase
     {
         $typeparser = new PHPDocTypeParser(null);
         $this->assertSame(
-            $typeparser->parseType(null, 'positive-int|negative-int|non-positive-int|non-negative-int', 0, false)->type,
+            $typeparser->parseTypeAndVar(null, 'positive-int|negative-int|non-positive-int|non-negative-int', 0, false)->type,
             'int'
         );
     }
