@@ -27,7 +27,6 @@ use MoodleHQ\MoodleCS\moodle\Tests\MoodleCSBaseTestCase;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  * @covers \MoodleHQ\MoodleCS\moodle\Sniffs\Commenting\PHPDocTypesSniff
- * @covers \MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser.php
  */
 class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
 {
@@ -86,7 +85,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     109 => 'PHPDoc var type missing or malformed',
                     112 => 'PHPDoc var type missing or malformed',
                     115 => 'PHPDoc var type missing or malformed',
-                    121 => 'PHPDoc function parameter 1 name missing or malformed',
+                    121 => 'PHPDoc function parameter 1 type missing or malformed',
                     126 => 'PHPDoc var type missing or malformed',
                     129 => 'PHPDoc var type missing or malformed',
                     135 => 'PHPDoc function parameter 1 type mismatch',
