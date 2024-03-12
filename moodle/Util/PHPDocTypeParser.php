@@ -130,26 +130,17 @@ class PHPDocTypeParser
         "\\SplSubject" => [],
     ];
 
-    /** @var string $namespace */
-    protected string $namespace = '';
-
-    /** @var array<non-empty-string, non-empty-string> use aliases, aliases are keys, class names are values */
-    protected array $usealiases;
-
     /** @var array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> inheritance heirarchy */
     protected array $artifacts;
+
+    /** @var object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string} */
+    protected object $scope;
 
     /** @var string the text to be parsed */
     protected string $text = '';
 
-    /** @var string the text to be parsed, with case retained */
-    protected string $textwithcase = '';
-
     /** @var bool when we encounter an unknown type, should we go wide or narrow */
     protected bool $gowide = false;
-
-    /** @var  array<string, string> type templates */
-    protected array $templates = [];
 
     /** @var object{startpos: non-negative-int, endpos: non-negative-int, text: ?non-empty-string}[] next tokens */
     protected array $nexts = [];
@@ -178,16 +169,11 @@ class PHPDocTypeParser
 
         // Initialise variables.
         if ($scope) {
-            $this->namespace = $scope->namespace;
-            $this->templates = $scope->templates;
-            $this->usealiases = $scope->uses;
+            $this->scope = $scope;
         } else {
-            $this->namespace = '';
-            $this->templates = [];
-            $this->usealiases = [];
+            $this->scope = (object)['namespace' => '', 'uses' => [], 'templates' => [], 'classname' => null, 'parentname' => null];
         }
         $this->text = $text;
-        $this->textwithcase = $text;
         $this->gowide = $gowide;
         $this->nexts = [];
         $this->next = $this->next();
@@ -233,7 +219,7 @@ class PHPDocTypeParser
                 if (!($this->next != null && $this->next[0] == '$')) {
                     throw new \Exception("Error parsing type, expected variable, saw \"{$this->next}\".");
                 }
-                $variable .= $this->next(0, true);
+                $variable .= $this->next;
                 assert($variable != '');
                 $this->parseToken();
                 if (
@@ -245,7 +231,7 @@ class PHPDocTypeParser
                     throw new \Exception("Warning parsing type, no space after variable name.");
                 }
                 if ($getwhat >= 3) {
-                    if ($this->next == '=' && $this->next(1) == 'null' && $type != null) {
+                    if ($this->next == '=' && $this->next(1) == 'null' && $type != null) { // TODO: Check no more content?
                         $type = $type . '|null';
                     }
                 }
@@ -263,25 +249,72 @@ class PHPDocTypeParser
     }
 
     /**
-     * Substitute owner and parent names
-     * @param non-empty-string $type the simplified type
-     * @param ?non-empty-string $ownername
-     * @param ?non-empty-string $parentname
-     * @return non-empty-string
+     * Parse a template
+     * @param ?object{namespace: string, uses: string[], templates: string[], $classname: ?string, $parentname: ?string} $scope
+     * @param string $text the text to parse
+     * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string}
+     *          the simplified type, variable, and remaining text
      */
-    public static function substituteNames(string $type, ?string $ownername, ?string $parentname): string {
-        // TODO: Make protected, use internally?
-        if ($ownername) {
-            $type = preg_replace('/\bself\b/', $ownername, $type);
-            assert($type != null);
-            $type = preg_replace('/\bstatic\b/', "static({$ownername})", $type);
-            assert($type != null);
+    public function parseTemplate(?object $scope, string $text): object {
+
+        // Initialise variables.
+        if ($scope) {
+            $this->scope = $scope;
+        } else {
+            $this->scope = (object)['namespace' => '', 'uses' => [], 'templates' => [], 'classname' => null, 'parentname' => null];
         }
-        if ($parentname) {
-            $type = preg_replace('/\bparent\b/', $parentname, $type);
-            assert($type != null);
+        $this->text = $text;
+        $this->gowide = false;
+        $this->nexts = [];
+        $this->next = $this->next();
+
+        // Try to parse variable.
+        $savednexts = $this->nexts;
+        try {
+            if (!($this->next != null && ctype_alpha($this->next[0]))) {
+                throw new \Exception("Error parsing type, expected variable, saw \"{$this->next}\".");
+            }
+            $variable = $this->next;
+            assert($variable != '');
+            $this->parseToken();
+            if (
+                !($this->next == null || $this->next == 'of'
+                    || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
+                    || in_array($this->next, [',', ';', ':', '.']))
+            ) {
+                // Code smell check.
+                throw new \Exception("Warning parsing type, no space after variable name.");
+            }
+        } catch (\Exception $e) {
+            $this->nexts = $savednexts;
+            $this->next = $this->next();
+            $variable = null;
         }
-        return $type;
+
+        if ($this->next == 'of') {
+            $this->parseToken('of');
+            // Try to parse type.
+            $savednexts = $this->nexts;
+            try {
+                $type = $this->parseAnyType();
+                if (
+                    !($this->next == null
+                        || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
+                        || in_array($this->next, [',', ';', ':', '.']))
+                ) {
+                    // Code smell check.
+                    throw new \Exception("Warning parsing type, no space after type.");
+                }
+            } catch (\Exception $e) {
+                $this->nexts = $savednexts;
+                $this->next = $this->next();
+                $type = null;
+            }
+        } else {
+            $type = 'mixed';
+        }
+
+        return (object)['type' => $type, 'var' => $variable, 'rem' => trim(substr($text, $this->nexts[0]->startpos))];
     }
 
     /**
@@ -406,10 +439,9 @@ class PHPDocTypeParser
     /**
      * Prefetch next token
      * @param non-negative-int $lookahead
-     * @param bool $getcase
      * @return ?non-empty-string
      */
-    protected function next(int $lookahead = 0, bool $getcase = false): ?string {
+    protected function next(int $lookahead = 0): ?string {
 
         // Fetch any more tokens we need.
         while (count($this->nexts) < $lookahead + 1) {
@@ -670,7 +702,6 @@ class PHPDocTypeParser
      * @return non-empty-string the simplified type
      */
     protected function parseBasicType(): string {
-        // TODO: Substitute class and parent in here?
 
         $next = $this->next;
         if ($next == null) {
@@ -862,18 +893,18 @@ class PHPDocTypeParser
         } elseif (strtolower($next) == 'self') {
             // Self.
             $this->parseToken('self');
-            $type = 'self';
+            $type = $this->scope->classname ? $this->scope->classname : 'self';
         } elseif (strtolower($next) == 'parent') {
             // Parent.
             $this->parseToken('parent');
-            $type = 'parent';
+            $type = $this->scope->parentname ? $this->scope->parentname : 'parent';  // TODO: Throw error if no parent?
         } elseif (in_array(strtolower($next), ['static', '$this'])) {
             // Static.
             $this->parseToken();
-            $type = 'static';
+            $type = $this->scope->classname ? "static({$this->scope->classname})" : 'static';
         } elseif (
             strtolower($next) == 'callable'
-            || $next == "\\Closure" || $next == 'Closure' && $this->namespace == "\\"
+            || $next == "\\Closure" || $next == 'Closure' && $this->scope->namespace == ''
         ) {
             // Callable.
             $callabletype = $this->parseToken();
@@ -968,14 +999,14 @@ class PHPDocTypeParser
             $type = $this->parseToken();
             if ($type[0] != "\\") {
                 // TODO: What's the correct order for this?
-                if (array_key_exists($type, $this->usealiases)) {
-                    $type = $this->usealiases[$type];
-                    assert($type != '');
-                } elseif ($this->templates[$type] ?? null) {
-                    $type = $this->templates[$type];
+                if (array_key_exists($type, $this->scope->uses)) {
+                    $type = $this->scope->uses[$type];
+                } elseif (array_key_exists($type, $this->scope->templates)) {
+                    $type = $this->scope->templates[$type];
                 } else {
-                    $type = $this->namespace . "\\" . $type;
+                    $type = $this->scope->namespace . "\\" . $type;
                 }
+                assert($type != '');
             }
             if ($this->next == '<') {
                 // Collection / Traversable.  // TODO: Could be any generic?

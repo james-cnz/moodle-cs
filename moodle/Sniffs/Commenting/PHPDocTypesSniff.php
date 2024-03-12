@@ -256,7 +256,8 @@ class PHPDocTypesSniff implements Sniff
                 }
             } catch (\Exception $e) {
                 // TODO: Remove.
-                echo ($this->token['content']);
+                echo ($this->token['content'] . "\n");
+                //var_dump($this->token);
                 $this->file->addError(
                     'Parse error',
                     $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
@@ -267,6 +268,7 @@ class PHPDocTypesSniff implements Sniff
 
         if (!$this->token['code'] && count($this->scopes) != 1) {
             // TODO: Remove.
+            //echo ($this->token['content'] . "\n");
             $this->file->addError(
                 'Parse error',
                 $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
@@ -364,7 +366,7 @@ class PHPDocTypesSniff implements Sniff
             $namespace = "\\" . $namespace;
         }
         if ($this->pass == 2) {
-            $this->file->addWarning('Found namespace %s', $this->fileptr, 'debug', [$namespace]);
+            //$this->file->addWarning('Found namespace %s', $this->fileptr, 'debug', [$namespace]);
         }
         if ($this->token['code'] == T_SEMICOLON) {
             end($this->scopes)->namespace = $namespace;
@@ -409,7 +411,7 @@ class PHPDocTypesSniff implements Sniff
                 $namespace = "\\" . $namespace;
             }
             if ($this->token['code'] == T_OPEN_USE_GROUP || $this->token['code'] == T_OPEN_CURLY_BRACKET) {
-                $namespacestart = $namespace;
+                $namespacestart = $namespace;  // TODO: Check there's a trailing backslash?
                 $typestart = $type;
                 $this->advance();
                 do {
@@ -442,7 +444,7 @@ class PHPDocTypesSniff implements Sniff
                     }
                     if ($this->pass == 2 && $type == 'class') {
                         end($this->scopes)->uses[$alias] = $namespace;
-                        $this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
+                        //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
                     }
                     $more = ($this->token && $this->token['code'] == T_COMMA);
                     if ($more) {
@@ -454,7 +456,10 @@ class PHPDocTypesSniff implements Sniff
                 }
                 $this->advance();
             } else {
-                $alias = substr($namespace, strrpos($namespace, "\\") + 1); // TODO: Deal with no seperator.
+                // TODO: Check there's no trailing backslash?
+                $alias = (strrpos($namespace, "\\") !== null) ?
+                    substr($namespace, strrpos($namespace, "\\") + 1)
+                    : $namespace;
                 if ($this->token && $this->token['code'] == T_AS) {
                     $this->advance(T_AS);
                     if ($this->token && $this->token['code'] == T_STRING) {
@@ -464,7 +469,7 @@ class PHPDocTypesSniff implements Sniff
                 }
                 if ($this->pass == 2 && $type == 'class') {
                     end($this->scopes)->uses[$alias] = $namespace;
-                    $this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
+                    //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
                 }
             }
             $more = ($this->token && $this->token['code'] == T_COMMA);
@@ -494,7 +499,7 @@ class PHPDocTypesSniff implements Sniff
             }
         }
         // Check not anonymous.
-        $this->file->addWarning('Found classish %s', $this->fileptr, 'debug', [$name]);
+        //$this->file->addWarning('Found classish %s', $this->fileptr, 'debug', [$name]);
         $oldscope = end($this->scopes);
         array_push($this->scopes, $newscope = clone $oldscope);
         $newscope->type = 'classish';
@@ -506,9 +511,17 @@ class PHPDocTypesSniff implements Sniff
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
         } elseif ($this->pass == 2) {
             if ($name && $this->comment && isset($this->comment->tags['@template'])) {
-                foreach ($this->comment->tags['@template'] as $template) {
-                    $this->file->addWarning('Found template %s', $this->fileptr, 'debug', [$template]);
-                    // TODO: Store.
+                foreach ($this->comment->tags['@template'] as $templatetext) {
+                    //$this->file->addWarning('Found template %s', $this->fileptr, 'debug', [$templatetext]);
+                    $templatedata = $this->typeparser->parseTemplate($newscope, $templatetext);
+                    if (!$templatedata->var) {
+                        $this->file->addEror('PHPDoc template name missing or malformed', $this->fileptr, 'phpdoc_template_name');
+                    } elseif (!$templatedata->type) {
+                        $this->file->addEror('PHPDoc template type missing or malformed', $this->fileptr, 'phpdoc_template_type');
+                        $newscope->templates[$templatedata->var] = 'never';
+                    } else {
+                        $newscope->templates[$templatedata->var] = $templatedata->type;
+                    }
                 }
             }
         }
@@ -537,7 +550,7 @@ class PHPDocTypesSniff implements Sniff
      * @return void
      */
     protected function processFunction(): void {
-        // Check not anonymous.
+        // TODO: Check not anonymous?
         $name = $this->file->getDeclarationName($this->fileptr);
         $parameters = $this->file->getMethodParameters($this->fileptr);
         $properties = $this->file->getMethodProperties($this->fileptr);
@@ -549,31 +562,70 @@ class PHPDocTypesSniff implements Sniff
         $newscope->closer = null;
 
         if ($this->pass == 2) {
-            $this->file->addWarning(
+            /*$this->file->addWarning(
                 'Found function %s params %s return %s',
                 $this->fileptr,
                 'debug',
                 [$name, count($parameters), $properties['return_type']]
-            );
+            );*/
             if ($this->comment && isset($parameters)) {
                 if (!isset($this->comment->tags['@param'])) {
                     $this->comment->tags['@param'] = [];
                 }
                 if (count($this->comment->tags['@param']) != count($parameters)) {
-                    $this->file->addWarning(
+                    $this->file->addError(
                         'PHPDoc number of function parameters doesn\'t match actual number',
                         $this->fileptr,
-                        'phpdoc_fun_param_count_wrong'
+                        'phpdoc_fun_param_count'
                     );
                 }
                 for ($varnum = 0; $varnum < count($this->comment->tags['@param']); $varnum++) {
-                    if ($varnum < count($parameters)) {
-                        $this->file->addWarning(
-                            'PHP param %s vs PHPDoc param %s',
+                    $docparamdata = $this->typeparser->parseTypeAndVar(
+                        $newscope,
+                        $this->comment->tags['@param'][$varnum],
+                        2,
+                        false
+                    );
+                    if (!$docparamdata->type) {
+                        $this->file->addError(
+                            'PHPDoc function parameter %s type missing or malformed',
                             $this->fileptr,
-                            'debug',
-                            [$parameters[$varnum]['content'], $this->comment->tags['@param'][$varnum]]
+                            'phpdoc_fun_param_type',
+                            [$varnum + 1]
                         );
+                    } elseif (!$docparamdata->var) {
+                        $this->file->addError(
+                            'PHPDoc function parameter %s name missing or malformed',
+                            $this->fileptr,
+                            'phpdoc_fun_param_name',
+                            [$varnum + 1]
+                        );
+                    } elseif ($varnum < count($parameters)) {
+                        //echo "about to call type parser\n";
+                        //var_dump($newscope);
+                        //echo "text: " . $parameters[$varnum]['content'] . "\n";
+                        $paramdata = $this->typeparser->parseTypeAndVar(
+                            $newscope,
+                            $parameters[$varnum]['content'],
+                            3,
+                            true
+                        );
+                        if (!$this->typeparser->comparetypes($paramdata->type, $docparamdata->type)) {
+                            $this->file->addError(
+                                'PHPDoc function parameter %s type mismatch',
+                                $this->fileptr,
+                                'phpdoc_fun_param_type_mismatch',
+                                [$varnum + 1]
+                            );
+                        } // TODO: Check doc type is nullable if native type is explicitly so?
+                        if ($paramdata->var != $docparamdata->var) {
+                            $this->file->addError(
+                                'PHPDoc function parameter %s name mismatch',
+                                $this->fileptr,
+                                'phpdoc_fun_param_name_mismatch',
+                                [$varnum + 1]
+                            );
+                        }
                     }
                 }
             }
@@ -581,22 +633,49 @@ class PHPDocTypesSniff implements Sniff
                 if (!isset($this->comment->tags['@return'])) {
                     $this->comment->tags['@return'] = [];
                 }
-                if (count($this->comment->tags['@return']) != 1) {  // TODO: What about __construct ?
-                    $this->file->addWarning(
-                        'PHPDoc missing or multiple function return types',
+                /*if (count($this->comment->tags['@return']) < 1 && $name != '__construct') {
+                    $this->file->addError(
+                        'PHPDoc missing function return type',
                         $this->fileptr,
-                        'phpdoc_fun_ret_count_wrong'
+                        'phpdoc_fun_ret_missing'
+                    );
+                } else*/if (count($this->comment->tags['@return']) > 1) {
+                    $this->file->addError(
+                        'PHPDoc multiple function return types--Put in one tag, seperated by vertical bars |',
+                        $this->fileptr,
+                        'phpdoc_fun_ret_multiple'
                     );
                 }
-                if ($properties['return_type']) {
-                    for ($retnum = 0; $retnum < count($this->comment->tags['@return']); $retnum++) {
-                        $this->file->addWarning(
-                            'PHP ret %s vs PHPDoc ret %s',
+                //echo "about to get ret data\n";
+                $retdata = $properties['return_type'] ?
+                    $this->typeparser->parseTypeAndVar(
+                        $newscope,
+                        $properties['return_type'],
+                        0,
+                        true
+                    )
+                    : (object)['type' => 'mixed'];
+                //echo "got ret data\n";
+                for ($retnum = 0; $retnum < count($this->comment->tags['@return']); $retnum++) {
+                    /*$this->file->addWarning(
+                        'PHP ret %s vs PHPDoc ret %s',
+                        $this->fileptr,
+                        'debug',
+                        [$properties['return_type'], $this->comment->tags['@return'][$retnum]]
+                    );*/
+                    $docretdata = $this->typeparser->parseTypeAndVar(
+                        $newscope,
+                        $this->comment->tags['@return'][$retnum],
+                        0,
+                        false
+                    );
+                    if (!$this->typeparser->comparetypes($retdata->type, $docretdata->type)) {
+                        $this->file->addError(
+                            'PHPDoc function return type mismatch',
                             $this->fileptr,
-                            'debug',
-                            [$properties['return_type'], $this->comment->tags['@return'][$retnum]]
+                            'phpdoc_fun_ret_type_mismatch'
                         );
-                    }
+                    } // TODO: Check doc type is nullable if native type is?
                 }
             }
         }
@@ -687,42 +766,87 @@ class PHPDocTypesSniff implements Sniff
             return;
         }
 
+        if (end($this->scopes)->type !== 'classish' || $const) {
+            return;
+        }
+
         $more = false;
         do {  // TODO: Give up on multiple?
             // Check name.
+            //echo "const: {$const}  token code string: " . ($this->token['code'] == T_STRING) ."\n";
             if ($definitelyvar && $this->token['code'] != ($const ? T_STRING : T_VARIABLE)) {
                 throw new \Exception();
             }
+            //echo "passed\n";
+
+            // Check it's a member var.
+            //$name = $this->token['content'];
+            //echo "about to check member var\n";
+            try {
+                $properties = $this->file->getMemberProperties($this->fileptr);
+            } catch (\Error $e) {
+                return;
+            }
+            //echo "checked member var\n";
+            if (!$properties) {
+                return;
+            }
 
             // Important stuff.
-            $name = $this->token['content'];
-            $properties = $this->file->getMemberProperties($this->fileptr);
-
             if ($this->pass == 2) {
-                $this->file->addWarning('Found variable %s', $this->fileptr, 'debug', [$name]);
-                if (isset($properties) && $this->comment) {
+                //$this->file->addWarning('Found variable %s', $this->fileptr, 'debug', [$name]);
+                if ($this->comment) {
                     if (!isset($this->comment->tags['@var'])) {
                         $this->comment->tags['@var'] = [];
                     }
-                    if (count($this->comment->tags['@var']) != 1) {
-                        $this->file->addWarning('PHPDoc missing or multiple var types', $this->fileptr, 'phpdoc_var_count_wrong');
+                    if (count($this->comment->tags['@var']) < 1) {
+                        $this->file->addError('PHPDoc missing var', $this->fileptr, 'phpdoc_var_missing');
+                    } elseif (count($this->comment->tags['@var']) > 1) {
+                        $this->file->addError('PHPDoc multiple vars', $this->fileptr, 'phpdoc_var_multiple');
                     }
-                    if ($properties['type']) {
-                        for ($varnum = 0; $varnum < count($this->comment->tags['@var']); $varnum++) {
-                            $this->file->addWarning(
-                                'PHP var %s vs PHPDoc var %s',
+                    $vardata = $properties['type'] ?
+                        $this->typeparser->parseTypeAndVar(
+                            end($this->scopes),
+                            $properties['type'],
+                            0,
+                            true
+                        )
+                        : (object)['type' => 'mixed'];
+                    for ($varnum = 0; $varnum < count($this->comment->tags['@var']); $varnum++) {
+                        /*$this->file->addWarning(
+                            'PHP var %s vs PHPDoc var %s',
+                            $this->fileptr,
+                            'debug',
+                            [$properties['type'], $this->comment->tags['@var'][$varnum]]
+                        );*/
+                        $docvardata = $this->typeparser->parseTypeAndVar(
+                            end($this->scopes),
+                            $this->comment->tags['@var'][$varnum],
+                            0,
+                            false
+                        );
+                        if (!$docvardata->type) {
+                            $this->file->addError(
+                                'PHPDoc var type missing or malformed',
                                 $this->fileptr,
-                                'debug',
-                                [$properties['type'], $this->comment->tags['@var'][$varnum]]
+                                'phpdoc_var_type',
+                                [$varnum + 1]
                             );
-                        }
+                        } else if (!$this->typeparser->comparetypes($vardata->type, $docvardata->type)) {
+                            $this->file->addError(
+                                'PHPDoc var type mismatch',
+                                $this->fileptr,
+                                'phpdoc_fun_var_type_mismatch'
+                            );
+                        } // TODO: Check doc type is nullable if native type is?
                     }
                 }
+                $this->advance();
             }
 
-            $this->advance();
 
-            // Check is actually variable.
+
+            // Check is actually variable.  // TODO: Forget this, already done.
             if (!$definitelyvar && !in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON])) {
                 return;
             }
