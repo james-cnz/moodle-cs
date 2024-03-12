@@ -34,7 +34,6 @@ use MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser;
  */
 final class PHPDocTypeParserTest extends TestCase
 {
-
     /**
      * Test valid types.
      *
@@ -42,12 +41,10 @@ final class PHPDocTypeParserTest extends TestCase
      */
     public function testValidTypes()
     {
-        $typeparser = new TypeParser(null);
+        $typeparser = new PHPDocTypeParser(null);
         $this->assertSame(
             $typeparser->parseType(null, 'positive-int|negative-int|non-positive-int|non-negative-int', 0, false)->type,
             'int'
         );
-
     }
-
 }

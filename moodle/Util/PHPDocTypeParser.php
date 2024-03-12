@@ -527,7 +527,7 @@ class PHPDocTypeParser
 
     /**
      * Fetch the next token
-     * @param ?non-empty-string $expect the expected text
+     * @param ?non-empty-string $expect the expected text, or null for any
      * @return non-empty-string
      */
     protected function parseToken(?string $expect = null): string {
@@ -535,10 +535,10 @@ class PHPDocTypeParser
         $next = $this->next;
 
         // Check we have the expected token.
-        if ($expect != null && strtolower($next) != strtolower($expect)) {
-            throw new \Exception("Error parsing type, expected \"{$expect}\", saw \"{$next}\".");
-        } elseif ($next == null) {
+        if ($next == null) {
             throw new \Exception("Error parsing type, unexpected end.");
+        } elseif ($expect != null && strtolower($next) != strtolower($expect)) {
+            throw new \Exception("Error parsing type, expected \"{$expect}\", saw \"{$next}\".");
         }
 
         // Prefetch next token.
