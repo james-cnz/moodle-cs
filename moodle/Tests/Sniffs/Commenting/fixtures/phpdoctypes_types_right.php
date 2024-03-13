@@ -410,12 +410,11 @@ class types_valid extends types_valid_parent {
      * @param Exception|ErrorException $exception
      * @param Error|ArithmeticError|AssertionError|ParseError|TypeError $error
      * @param ArithmeticError|DivisionByZeroError $arithmeticerror
-     * @param CompileError|ParseError $compileerror
      */
     public function builtin_classes(
         Traversable $traversable, Iterator $iterator,
         Throwable $throwable, Exception $exception, Error $error,
-        ArithmeticError $arithmeticerror, CompileError $compileerror
+        ArithmeticError $arithmeticerror
     ): void {
     }
 

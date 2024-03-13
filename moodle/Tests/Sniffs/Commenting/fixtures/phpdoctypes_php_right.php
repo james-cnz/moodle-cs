@@ -49,11 +49,22 @@ class php_valid {
      */
     function namespaces(php_valid $x): void {
     }
+
     /**
      * Uses recognised
      * @param \stdClass $x
      * @return void
      */
     function uses(myStdClass $x): void {
+    }
+
+    /**
+     * Multiline comment
+     * @param object{
+     *   a: int,
+     *   b: string
+     * } $x
+     */
+    function multiline_comment(object $x): void {
     }
 }

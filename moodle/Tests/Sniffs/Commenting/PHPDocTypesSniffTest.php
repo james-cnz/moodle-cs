@@ -100,6 +100,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     45 => 'PHPDoc function parameter 1 type mismatch',
                     52 => 'PHPDoc function parameter 1 type mismatch',
                     59 => 'PHPDoc function return type mismatch',
+                    66 => 'PHPDoc function parameter 1 type mismatch',
                 ],
                 'warnings' => [],
             ],

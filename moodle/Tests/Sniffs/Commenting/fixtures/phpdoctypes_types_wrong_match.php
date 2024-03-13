@@ -59,4 +59,11 @@ class types_match_invalid {
     public function null_isnt_void(): void {
     }
 
+    /**
+     * Namespace wrong
+     * @param \wrongnamespace\types_match_invalid $x
+     */
+    public function namespace_wrong(types_match_invalid $x): void {
+    }
+
 }

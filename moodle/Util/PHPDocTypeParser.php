@@ -150,7 +150,7 @@ class PHPDocTypeParser
 
     /**
      * Constructor
-     * @param ?array $artifacts
+     * @param ?array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> $artifacts
      */
     public function __construct(?array $artifacts = null) {
         $this->artifacts = $artifacts ?? [];
@@ -441,6 +441,7 @@ class PHPDocTypeParser
      * Prefetch next token
      * @param non-negative-int $lookahead
      * @return ?non-empty-string
+     * @phpstan-impure
      */
     protected function next(int $lookahead = 0): ?string {
 
@@ -530,6 +531,7 @@ class PHPDocTypeParser
      * Fetch the next token
      * @param ?non-empty-string $expect the expected text, or null for any
      * @return non-empty-string
+     * @phpstan-impure
      */
     protected function parseToken(?string $expect = null): string {
 
@@ -555,6 +557,7 @@ class PHPDocTypeParser
      * Parse a list of types seperated by | and/or &, single nullable type, or conditional return type
      * @param bool $inbrackets are we immediately inside brackets?
      * @return non-empty-string the simplified type
+     * @phpstan-impure
      */
     protected function parseAnyType(bool $inbrackets = false): string {
 
@@ -680,6 +683,7 @@ class PHPDocTypeParser
     /**
      * Parse a single type, possibly array type
      * @return non-empty-string the simplified type
+     * @phpstan-impure
      */
     protected function parseSingleType(): string {
         if ($this->next == '(') {
@@ -701,6 +705,7 @@ class PHPDocTypeParser
     /**
      * Parse a basic type
      * @return non-empty-string the simplified type
+     * @phpstan-impure
      */
     protected function parseBasicType(): string {
 

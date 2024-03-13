@@ -89,27 +89,24 @@ class PHPDocTypesSniff implements Sniff
         $this->pass = 1;
         $this->typeparser = null;
         $this->fileptr = $stackptr;
-        $this->scopes = [(object)['type' => 'root', 'namespace' => '', 'uses' => [], 'templates' => [],
-                        'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]];
-        $this->fetchToken();
-        $this->comment = null;
         $this->processPass();
 
         $this->pass = 2;
         $this->typeparser = new PHPDocTypeParser($this->artifacts);
         $this->fileptr = $stackptr;
-        $this->scopes = [(object)['type' => 'root', 'namespace' => '', 'uses' => [], 'templates' => [],
-                        'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]];
-        $this->fetchToken();
-        $this->comment = null;
         $this->processPass();
     }
 
     /**
      * A pass over the file.
      * @return void
+     * @phpstan-impure
      */
     protected function processPass(): void {
+        $this->scopes = [(object)['type' => 'root', 'namespace' => '', 'uses' => [], 'templates' => [],
+                        'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]];
+        $this->fetchToken();
+        $this->comment = null;
 
         while ($this->token['code']) {
             try {
@@ -279,6 +276,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Fetch the current tokens.
      * @return void
+     * @phpstan-impure
      */
     protected function fetchToken(): void {
         $this->token = ($this->fileptr < count($this->tokens)) ? $this->tokens[$this->fileptr] : ['code' => null, 'content' => ''];
@@ -289,6 +287,7 @@ class PHPDocTypesSniff implements Sniff
      * @param mixed $expectedcode
      * @param bool $skipphpdoc
      * @return void
+     * @phpstan-impure
      */
     protected function advance($expectedcode = null, $skipphpdoc = true): void {
         if ($expectedcode && $this->token['code'] != $expectedcode || $this->token['code'] == null) {
@@ -314,6 +313,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a PHPDoc comment.
      * @return void
+     * @phpstan-impure
      */
     protected function processComment(): void {
         $this->comment = (object)['tags' => []];
@@ -365,6 +365,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a namespace declaration.
      * @return void
+     * @phpstan-impure
      */
     protected function processNamespace(): void {
         $this->advance(T_NAMESPACE);
@@ -403,6 +404,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a use declaration.
      * @return void
+     * @phpstan-impure
      */
     protected function processUse(): void {
         $this->advance(T_USE);
@@ -492,6 +494,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a use as alias.
      * @return ?string
+     * @phpstan-impure
      */
     protected function processUseAsAlias(): ?string {
         $alias = null;
@@ -508,6 +511,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a classish thing.
      * @return void
+     * @phpstan-impure
      */
     protected function processClassish(): void {
         $name = $this->file->getDeclarationName($this->fileptr);
@@ -573,6 +577,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a function.
      * @return void
+     * @phpstan-impure
      */
     protected function processFunction(): void {
         // TODO: Check not anonymous?
@@ -757,6 +762,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a possible variable.
      * @return void
+     * @phpstan-impure
      */
     protected function processVariable(): void {
 
@@ -906,6 +912,7 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a declare.
      * @return void
+     * @phpstan-impure
      */
     protected function processDeclare(): void {
 
