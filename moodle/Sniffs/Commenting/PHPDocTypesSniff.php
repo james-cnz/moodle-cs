@@ -344,7 +344,6 @@ class PHPDocTypesSniff implements Sniff
                     $tagcontent .= $this->token['content'];
                     $newline = in_array(substr($this->token['content'], -1), ["\n", "\r"]);
                     $this->advance(null, false);
-                     
                 }
                 // Skip line starting stuff.
                 while (
