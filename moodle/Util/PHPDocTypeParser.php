@@ -206,9 +206,10 @@ class PHPDocTypeParser
                 if ($getwhat >= 2) {
                     if ($this->next == '&') {
                         // Not adding this for code smell check,
-                        // because the checker previously disallowed pass by reference & in PHPDocs,
+                        // because the old checker disallowed pass by reference & in PHPDocs,
                         // so adding this would be a nusiance for people who changed their PHPDocs
-                        // to conform to the previous rules.
+                        // to conform to the previous rules, and would make it impossible to conform
+                        // if both checkers were used.
                         $this->parseToken('&');
                     }
                     if ($this->next == '...') {

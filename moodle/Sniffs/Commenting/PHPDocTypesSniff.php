@@ -52,8 +52,9 @@ class PHPDocTypesSniff implements Sniff
     /** @var int pointer in the file */
     protected int $fileptr = 0;
 
-    /** @var object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string}[] scopes */
-    protected array $scopes = [];
+    /** @var object{type: string, namespace: string, uses: string[], templates: string[],
+     *              classname: ?string, parentname: ?string, opened: bool, closer: ?int}[] scopes */
+    protected array $scopes = [];  // TODO: Add remaining properties.
 
     /** @var ?object{tags: array<string, string[]>} PHPDoc comment for upcoming declaration */
     protected ?object $comment = null;
@@ -257,7 +258,6 @@ class PHPDocTypesSniff implements Sniff
             } catch (\Exception $e) {
                 // TODO: Remove.
                 echo ($this->token['content'] . "\n");
-                //var_dump($this->token);
                 $this->file->addError(
                     'Parse error',
                     $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
@@ -268,7 +268,6 @@ class PHPDocTypesSniff implements Sniff
 
         if (!$this->token['code'] && count($this->scopes) != 1) {
             // TODO: Remove.
-            //echo ($this->token['content'] . "\n");
             $this->file->addError(
                 'Parse error',
                 $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
@@ -318,23 +317,44 @@ class PHPDocTypesSniff implements Sniff
      */
     protected function processComment(): void {
         $this->comment = (object)['tags' => []];
+
+        // Skip line starting stuff.
+        while (
+            in_array($this->token['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_STAR])
+                || $this->token['code'] == T_DOC_COMMENT_WHITESPACE
+                    && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
+        ) {
+            $this->advance(null, false);
+        }
+        // For each tag.
         while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
-            $tagtype = null;
-            $tagcontent = "";
-            while (in_array($this->token['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_STAR, T_DOC_COMMENT_WHITESPACE])) {
-                $this->advance(null, false);
-            }
+            // Check new tag.
             if ($this->token['code'] == T_DOC_COMMENT_TAG) {
                 $tagtype = $this->token['content'];
                 $this->advance(T_DOC_COMMENT_TAG, false);
+            } else {
+                $tagtype = '';
             }
-            while (
-                $this->token['code'] != T_DOC_COMMENT_CLOSE_TAG
-                && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
-            ) {
-                $tagcontent .= $this->token['content'];
-                $this->advance(null, false);
-            }
+            $tagcontent = '';
+            // For each line.
+            do {
+                $newline = false;
+                // Fetch line content.
+                while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG && !$newline) {
+                    $tagcontent .= $this->token['content'];
+                    $newline = in_array(substr($this->token['content'], -1), ["\n", "\r"]);
+                    $this->advance(null, false);
+                     
+                }
+                // Skip line starting stuff.
+                while (
+                    in_array($this->token['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_STAR])
+                        || $this->token['code'] == T_DOC_COMMENT_WHITESPACE
+                            && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
+                ) {
+                    $this->advance(null, false);
+                }
+            } while (!in_array($this->token['code'], [T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_TAG]));
             if (!isset($this->comment->tags[$tagtype])) {
                 $this->comment->tags[$tagtype] = [];
             }
@@ -607,9 +627,6 @@ class PHPDocTypesSniff implements Sniff
                             [$varnum + 1]
                         );
                     } elseif ($varnum < count($parameters)) {
-                        //echo "about to call type parser\n";
-                        //var_dump($newscope);
-                        //echo "text: " . $parameters[$varnum]['content'] . "\n";
                         $paramdata = $this->typeparser->parseTypeAndVar(
                             $newscope,
                             $parameters[$varnum]['content'],
@@ -639,6 +656,7 @@ class PHPDocTypesSniff implements Sniff
                 if (!isset($this->comment->tags['@return'])) {
                     $this->comment->tags['@return'] = [];
                 }
+                // The old checker didn't check this.
                 /*if (count($this->comment->tags['@return']) < 1 && $name != '__construct') {
                     $this->file->addError(
                         'PHPDoc missing function return type',
@@ -780,21 +798,17 @@ class PHPDocTypesSniff implements Sniff
         $more = false;
         do {  // TODO: Give up on multiple?
             // Check name.
-            //echo "const: {$const}  token code string: " . ($this->token['code'] == T_STRING) ."\n";
             if ($definitelyvar && $this->token['code'] != ($const ? T_STRING : T_VARIABLE)) {
                 throw new \Exception();
             }
-            //echo "passed\n";
 
             // Check it's a member var.
             //$name = $this->token['content'];
-            //echo "about to check member var\n";
             try {
                 $properties = $this->file->getMemberProperties($this->fileptr);
             } catch (\Error $e) {
                 return;
             }
-            //echo "checked member var\n";
             if (!$properties) {
                 return;
             }
@@ -858,8 +872,6 @@ class PHPDocTypesSniff implements Sniff
                 return;
             }
 
-            // TODO: Require PHPDoc only in classish scope.
-
             return;  // Give up.  TODO: Tidy.
 
             // Parse default value.  // TODO: Balance brackets, so we don't consume trailing comma? // TODO: Give up.
@@ -882,6 +894,7 @@ class PHPDocTypesSniff implements Sniff
                 }
             }
 
+            // TODO: This doesn't work, because trailing commas are already consumed.
             $more = ($this->token['code'] == T_COMMA || $this->token['code'] == T_VARIABLE);
             if ($more && $this->token['code'] == T_COMMA) {
                 $this->advance(T_COMMA);
@@ -918,6 +931,7 @@ class PHPDocTypesSniff implements Sniff
             $this->advance();
         }
 
+        // No close parenthesis, because it's already been consumed.
         $this->advance(T_SEMICOLON, false);
     }
 }

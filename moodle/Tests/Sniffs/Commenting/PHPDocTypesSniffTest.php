@@ -59,13 +59,13 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
 
     public static function provider(): array {
         return [
-            'PHPDocTypes right' => [
-                'fixture' => 'phpdoctypes_right',
+            'PHPDocTypes types right' => [
+                'fixture' => 'phpdoctypes_types_right',
                 'errors' => [],
                 'warnings' => [],
             ],
-            'PHPDocTypes wrong' => [
-                'fixture' => 'phpdoctypes_wrong',
+            'PHPDocTypes types wrong parse' => [
+                'fixture' => 'phpdoctypes_types_wrong_parse',
                 'errors' => [
                     45 => 'PHPDoc function parameter 1 name missing or malformed',
                     52 => 'PHPDoc function parameter 1 name missing or malformed',
@@ -91,8 +91,21 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     121 => 'PHPDoc function parameter 1 type missing or malformed',
                     126 => 'PHPDoc var type missing or malformed',
                     129 => 'PHPDoc var type missing or malformed',
-                    135 => 'PHPDoc function parameter 1 type mismatch',
                 ],
+                'warnings' => [],
+            ],
+            'PHPDocTypes types wrong match' => [
+                'fixture' => 'phpdoctypes_types_wrong_match',
+                'errors' => [
+                    45 => 'PHPDoc function parameter 1 type mismatch',
+                    52 => 'PHPDoc function parameter 1 type mismatch',
+                    59 => 'PHPDoc function return type mismatch',
+                ],
+                'warnings' => [],
+            ],
+            'PHPDocTypes php right' => [
+                'fixture' => 'phpdoctypes_php_right',
+                'errors' => [],
                 'warnings' => [],
             ],
         ];

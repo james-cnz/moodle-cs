@@ -128,11 +128,4 @@ class types_invalid {
     /** @var (types_invalid int Expecting closing bracket, saw other*/
     public $expectingclosingbracketsawother;
 
-    /**
-     * Type mismatch
-     * @param string $x
-     */
-    public function type_mismatch(int $x): void {
-    }
-
 }
