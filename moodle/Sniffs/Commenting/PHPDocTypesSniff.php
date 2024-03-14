@@ -104,7 +104,7 @@ class PHPDocTypesSniff implements Sniff
             $this->processPass();
         } catch (\Exception $e) {
             $this->file->addError(
-                'The PHPDoc type checker failed to parse the file.  PHPDoc type checks were not performed.  ' . 
+                'The PHPDoc type checker failed to parse the file.  PHPDoc type checks were not performed.  ' .
                 'Debug info: file %s line %s',
                 $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
                 'phpdoc_type_parse',
@@ -128,7 +128,6 @@ class PHPDocTypesSniff implements Sniff
         $this->advance(T_OPEN_TAG);
 
         while ($this->token['code']) {
-
             // Skip irrelevant stuff.
             while (
                 !in_array(
@@ -233,12 +232,13 @@ class PHPDocTypesSniff implements Sniff
             // TODO: Define.
 
             // Declarations.
-            if (in_array($this->token['code'] , [
-                T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
-                T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
-                T_FUNCTION, T_CLOSURE,
-                T_CONST, T_VAR,
-            ])) {
+            if (
+                in_array($this->token['code'],
+                    [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
+                    T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
+                    T_FUNCTION, T_CLOSURE,
+                    T_CONST, T_VAR,])
+            ) {
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
                 $static = false;
@@ -270,7 +270,6 @@ class PHPDocTypesSniff implements Sniff
             }
 
             throw new \Exception();  // TODO: Check for variable assignments?
-
         }
 
         if (!$this->token['code'] && count($this->scopes) != 1) {
@@ -316,7 +315,8 @@ class PHPDocTypesSniff implements Sniff
                 $this->commentpendingcounter = 2;
                 $nextptr = $this->fileptr;
             } else {
-                if ($this->commentpending && $this->commentpendingcounter > 0
+                if (
+                    $this->commentpending && $this->commentpendingcounter > 0
                     && $this->tokens[$nextptr]['code'] != T_WHITESPACE
                 ) {
                     $this->commentpendingcounter--;
@@ -844,14 +844,12 @@ class PHPDocTypesSniff implements Sniff
                     } // TODO: Check doc type is nullable if native type is?
                 }
             }
-
         }
         $this->advance();
 
         if (!in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON])) {
             throw new \Exception();
         }
-
     }
 
     /**
@@ -865,6 +863,5 @@ class PHPDocTypesSniff implements Sniff
         $this->advance(T_OPEN_PARENTHESIS);
         $this->advance(T_STRING);
         $this->advance(T_EQUAL);
-
     }
 }
