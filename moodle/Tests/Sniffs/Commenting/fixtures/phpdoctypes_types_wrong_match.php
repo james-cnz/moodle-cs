@@ -66,4 +66,11 @@ class types_match_invalid {
     public function namespace_wrong(types_match_invalid $x): void {
     }
 
+    /**
+     * Case mismatch
+     * @param Types_match_invalid $x
+     */
+    public function case_mismatch(types_match_invalid $x): void {
+    }
+
 }

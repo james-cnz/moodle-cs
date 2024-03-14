@@ -34,6 +34,18 @@ defined('MOODLE_INTERNAL') || die();
 use stdClass as myStdClass;
 
 /**
+ * A parent class
+ */
+class php_valid_parent {
+}
+
+/**
+ * An interface
+ */
+interface php_valid_interface {
+}
+
+/**
  * A collection of valid types for testing
  *
  * @package   local_codechecker
@@ -41,7 +53,7 @@ use stdClass as myStdClass;
  * @author    James Calder
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
  */
-class php_valid {
+class php_valid extends php_valid_parent implements php_valid_interface {
     /**
      * Namespaces recognised
      * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\php_valid $x
@@ -56,6 +68,22 @@ class php_valid {
      * @return void
      */
     function uses(myStdClass $x): void {
+    }
+
+    /**
+     * Parents recognised
+     * @param php_valid $x
+     * @return void
+     */
+    function parents(php_valid_parent $x): void {
+    }
+
+    /**
+     * Interfaces recognised
+     * @param php_valid $x
+     * @return void
+     */
+    function interfaces(php_valid_interface $x): void {
     }
 
     /**
