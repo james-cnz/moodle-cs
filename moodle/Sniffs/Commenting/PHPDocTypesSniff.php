@@ -239,7 +239,7 @@ class PHPDocTypesSniff implements Sniff
                     T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
                     T_FUNCTION, T_CLOSURE,
                     T_CONST, T_VAR, ]
-                    )
+                )
             ) {
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
