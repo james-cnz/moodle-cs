@@ -233,11 +233,13 @@ class PHPDocTypesSniff implements Sniff
 
             // Declarations.
             if (
-                in_array($this->token['code'],
+                in_array(
+                    $this->token['code'],
                     [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
                     T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
                     T_FUNCTION, T_CLOSURE,
-                    T_CONST, T_VAR,])
+                    T_CONST, T_VAR, ]
+                    )
             ) {
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
