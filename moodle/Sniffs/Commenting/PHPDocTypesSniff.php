@@ -321,7 +321,7 @@ class PHPDocTypesSniff implements Sniff
      * @return void
      * @phpstan-impure
      */
-    protected function advance_comment($expectedcode = null): void {
+    protected function advanceComment($expectedcode = null): void {
         if (
             !in_array(
                 $this->token['code'],
@@ -360,14 +360,14 @@ class PHPDocTypesSniff implements Sniff
                 || $this->token['code'] == T_DOC_COMMENT_WHITESPACE
                     && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
         ) {
-            $this->advance_comment();
+            $this->advanceComment();
         }
         // For each tag.
         while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
             // Check new tag.
             if ($this->token['code'] == T_DOC_COMMENT_TAG) {
                 $tagtype = $this->token['content'];
-                $this->advance_comment(T_DOC_COMMENT_TAG);
+                $this->advanceComment(T_DOC_COMMENT_TAG);
             } else {
                 $tagtype = '';
             }
@@ -379,7 +379,7 @@ class PHPDocTypesSniff implements Sniff
                 while ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG && !$newline) {
                     $tagcontent .= $this->token['content'];
                     $newline = in_array(substr($this->token['content'], -1), ["\n", "\r"]);
-                    $this->advance_comment();
+                    $this->advanceComment();
                 }
                 // Skip line starting stuff.
                 while (
@@ -387,7 +387,7 @@ class PHPDocTypesSniff implements Sniff
                         || $this->token['code'] == T_DOC_COMMENT_WHITESPACE
                             && !in_array(substr($this->token['content'], -1), ["\n", "\r"])
                 ) {
-                    $this->advance_comment();
+                    $this->advanceComment();
                 }
             } while (!in_array($this->token['code'], [T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_TAG]));
             if (!isset($this->commentpending->tags[$tagtype])) {
@@ -395,7 +395,7 @@ class PHPDocTypesSniff implements Sniff
             }
             $this->commentpending->tags[$tagtype][] = trim($tagcontent);
         }
-        $this->advance_comment(T_DOC_COMMENT_CLOSE_TAG);
+        $this->advanceComment(T_DOC_COMMENT_CLOSE_TAG);
     }
 
     /**
