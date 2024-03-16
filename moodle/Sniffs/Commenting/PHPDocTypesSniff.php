@@ -626,19 +626,9 @@ class PHPDocTypesSniff implements Sniff
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
         } elseif ($this->pass == 2) {
             // TODO: Check for missing comment if classish named?
-            // Fetch and check templates.
+            // Check and store templates.
             if ($this->comment && isset($this->comment->tags['@template'])) {
-                foreach ($this->comment->tags['@template'] as $templatetext) {
-                    $templatedata = $this->typeparser->parseTemplate($newscope, $templatetext);
-                    if (!$templatedata->var) {
-                        $this->file->addError('PHPDoc template name missing or malformed', $this->fileptr, 'phpdoc_template_name');
-                    } elseif (!$templatedata->type) {
-                        $this->file->addError('PHPDoc template type missing or malformed', $this->fileptr, 'phpdoc_template_type');
-                        $newscope->templates[$templatedata->var] = 'never';
-                    } else {
-                        $newscope->templates[$templatedata->var] = $templatedata->type;
-                    }
-                }
+                $this->processTemplates();
             }
         }
 
@@ -702,8 +692,22 @@ class PHPDocTypesSniff implements Sniff
         $newscope->opened = false;
         $newscope->closer = null;
 
+        // Checks.
         if ($this->pass == 2) {
-            // TODO: Check for missing docs if not anonymous?  Fetch templates.
+            // Check for missing docs if not anonymous.
+            if ($name && !$this->comment) {
+                $this->file->addWarning(
+                    'PHPDoc function is not documented',
+                    $this->fileptr,
+                    'phpdoc_fun_doc_missing'
+                );
+            }
+
+            // Check and store templates.
+            if ($this->comment && isset($this->comment->tags['@template'])) {
+                $this->processTemplates();
+            }
+
             // Check parameter types.
             if ($this->comment && isset($parameters)) {
                 if (!isset($this->comment->tags['@param'])) {
@@ -827,6 +831,26 @@ class PHPDocTypesSniff implements Sniff
     }
 
     /**
+     * Process templates.
+     * @return void
+     * @phpstan-impure
+     */
+    protected function processTemplates(): void {
+        $newscope = end($this->scopes);
+        foreach ($this->comment->tags['@template'] as $templatetext) {
+            $templatedata = $this->typeparser->parseTemplate($newscope, $templatetext);
+            if (!$templatedata->var) {
+                $this->file->addError('PHPDoc template name missing or malformed', $this->fileptr, 'phpdoc_template_name');
+            } elseif (!$templatedata->type) {
+                $this->file->addError('PHPDoc template type missing or malformed', $this->fileptr, 'phpdoc_template_type');
+                $newscope->templates[$templatedata->var] = 'never';
+            } else {
+                $newscope->templates[$templatedata->var] = $templatedata->type;
+            }
+        }
+    }
+
+    /**
      * Process a variable.
      * @return void
      * @phpstan-impure
@@ -867,9 +891,13 @@ class PHPDocTypesSniff implements Sniff
                 $this->file->getMemberProperties($this->fileptr)
                 : null;
 
-            if (!$this->comment && in_array(end($this->scopes)->type, ['classish', 'root'])) {
-                // Require comments for class variables and root constants.
-                $this->file->addWarning('PHPDoc missing for var', $this->fileptr, 'phpdoc_var_block_missing');
+            if (!$this->comment && end($this->scopes)->type == 'classish') {
+                // Require comments for class variables and constants.
+                $this->file->addWarning(
+                    'PHPDoc variable or constant is not documented',
+                    $this->fileptr,
+                    'phpdoc_var_doc_missing'
+                );
             } elseif ($this->comment) {
                 if (!isset($this->comment->tags['@var'])) {
                     $this->comment->tags['@var'] = [];
