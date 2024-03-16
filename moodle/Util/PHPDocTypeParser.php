@@ -162,8 +162,8 @@ class PHPDocTypeParser
      * @param string $text the text to parse
      * @param 0|1|2|3 $getwhat what to get 0=type only 1=also var 2=also modifiers (& ...) 3=also default
      * @param bool $gowide if we can't determine the type, should we assume wide (for native type) or narrow (for PHPDoc)?
-     * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string, nullable: bool}
-     *          the simplified type, variable, remaining text, and whether the type is explicitly nullable
+     * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string}
+     *          the simplified type, variable, and remaining text
      */
     public function parseTypeAndVar(?object $scope, string $text, int $getwhat, bool $gowide): object {
 
@@ -182,9 +182,8 @@ class PHPDocTypeParser
         $savednexts = $this->nexts;
         try {
             $type = $this->parseAnyType();
-            $explicitnullable = strpos("|{$type}|", "|null|") !== false; // For code smell check.
             if (
-                !($this->next == null || $getwhat >= 1 // TODO: Always require space?
+                !($this->next == null
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
                     || in_array($this->next, [',', ';', ':', '.']))
             ) {
@@ -195,7 +194,6 @@ class PHPDocTypeParser
             $this->nexts = $savednexts;
             $this->next = $this->next();
             $type = null;
-            $explicitnullable = false;
         }
 
         // Try to parse variable.
@@ -232,7 +230,12 @@ class PHPDocTypeParser
                     throw new \Exception("Warning parsing type, no space after variable name.");
                 }
                 if ($getwhat >= 3) {
-                    if ($this->next == '=' && $this->next(1) == 'null' && $type != null) { // TODO: Check no more content?
+                    if (
+                        $this->next == '='
+                        && strtolower($this->next(1)) == 'null'
+                        && strtolower(trim(substr($text, $this->nexts[1]->startpos))) == 'null'
+                        && $type != null && $type != 'mixed'
+                    ) {
                         $type = $type . '|null';
                     }
                 }
@@ -245,8 +248,7 @@ class PHPDocTypeParser
             $variable = null;
         }
 
-        return (object)['type' => $type, 'var' => $variable,
-                        'rem' => trim(substr($text, $this->nexts[0]->startpos)), 'nullable' => $explicitnullable];
+        return (object)['type' => $type, 'var' => $variable, 'rem' => trim(substr($text, $this->nexts[0]->startpos))];
     }
 
     /**
@@ -903,7 +905,7 @@ class PHPDocTypeParser
         } elseif (strtolower($next) == 'parent') {
             // Parent.
             $this->parseToken('parent');
-            $type = $this->scope->parentname ? $this->scope->parentname : 'parent';  // TODO: Throw error if no parent?
+            $type = $this->scope->parentname ? $this->scope->parentname : 'parent';
         } elseif (in_array(strtolower($next), ['static', '$this'])) {
             // Static.
             $this->parseToken();
@@ -1007,7 +1009,6 @@ class PHPDocTypeParser
                 throw new \Exception("Error parsing type, class name has trailing slash.");
             }
             if ($type[0] != "\\") {
-                // TODO: What's the correct order for this?
                 if (array_key_exists($type, $this->scope->uses)) {
                     $type = $this->scope->uses[$type];
                 } elseif (array_key_exists($type, $this->scope->templates)) {
@@ -1017,27 +1018,24 @@ class PHPDocTypeParser
                 }
                 assert($type != '');
             }
-            if ($this->next == '<') {
-                // Collection / Traversable.  // TODO: Could be any generic?
-                $this->parseToken('<');
-                $firsttype = $this->parseAnyType();
-                if ($this->next == ',') {
-                    $key = $firsttype;
-                    $this->parseToken(',');
-                    $value = $this->parseAnyType();
-                } else {
-                    $key = null;
-                    $value = $firsttype;
-                }
-                $this->parseToken('>');
-            }
         } else {
             throw new \Exception("Error parsing type, unrecognised type.");
         }
 
-        // Suffix.
-        // We can't embed this in the class name section, because it could apply to relative classes.
-        if ($this->next == '::' && (in_array('object', $this->superTypes($type)))) {
+        // Suffixes.  We can't embed these in the class name section, because they could apply to relative classes.
+        if ($this->next == '<' && (in_array('object', $this->superTypes($type)))) {
+            // Generics.
+            $this->parseToken('<');
+            $more = false;
+            do {
+                $this->parseAnyType();
+                $more = ($this->next == ',');
+                if ($more) {
+                    $this->parseToken(',');
+                }
+            } while ($more);
+            $this->parseToken('>');
+        } elseif ($this->next == '::' && (in_array('object', $this->superTypes($type)))) {
             // Class constant.
             $this->parseToken('::');
             $nextchar = ($this->next == null) ? null : $this->next[0];

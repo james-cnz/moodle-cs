@@ -72,6 +72,10 @@ class PHPDocTypesSniff implements Sniff
      * the current token */
     protected array $token = ['code' => null, 'content' => ''];
 
+    /** @var array{'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int}
+     * the previous token */
+    protected array $tokenprevious = ['code' => null, 'content' => ''];
+
     /**
      * Register for open tag (only process once per file).
      * @return array-key[]
@@ -133,6 +137,7 @@ class PHPDocTypesSniff implements Sniff
     protected function processPass(): void {
         $this->scopes = [(object)['type' => 'root', 'namespace' => '', 'uses' => [], 'templates' => [],
                         'classname' => null, 'parentname' => null, 'opened' => true, 'closer' => null]];
+        $this->tokenprevious = ['code' => null, 'content' => ''];
         $this->fetchToken();
         $this->commentpending = null;
         $this->comment = null;
@@ -252,6 +257,7 @@ class PHPDocTypesSniff implements Sniff
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
                 $static = false;
+                $staticprecededbynew = ($this->tokenprevious['code'] == T_NEW);
                 while (
                     in_array(
                         $this->token['code'],
@@ -261,8 +267,8 @@ class PHPDocTypesSniff implements Sniff
                     $static = ($this->token['code'] == T_STATIC);
                     $this->advance();
                 }
-                if ($static && (in_array($this->token['code'], [T_DOUBLE_COLON, T_OPEN_PARENTHESIS, T_SEMICOLON]))) {
-                    // Ignore static late binding.  // TODO: Check previous token is 'new'.
+                if ($static && ($this->token['code'] == T_DOUBLE_COLON || $staticprecededbynew)) {
+                    // Ignore static late binding.
                 } elseif (in_array($this->token['code'], [T_CLASS,  T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
                     // Classish thing.
                     $this->processClassish();
@@ -321,6 +327,8 @@ class PHPDocTypesSniff implements Sniff
             $nextptr++;
         }
 
+        $this->tokenprevious = $this->token;
+
         // Process PHPDoc comments.
         while ($nextptr < count($this->tokens) && $this->tokens[$nextptr]['code'] == T_DOC_COMMENT_OPEN_TAG) {
             $this->fileptr = $nextptr;
@@ -331,7 +339,6 @@ class PHPDocTypesSniff implements Sniff
         }
 
         $this->fileptr = $nextptr;
-
         $this->fetchToken();
 
         // Dispose of old comment.
@@ -458,7 +465,6 @@ class PHPDocTypesSniff implements Sniff
         }
         if ($namespace != '' && $namespace[strlen($namespace) - 1] == "\\") {
             throw new \Exception();
-            // $namespace = substr($namespace, 0, strlen($namespace) - 1); // TODO: Remove if not needed.
         }
         if ($namespace != '' && $namespace[0] != "\\") {
             $namespace = "\\" . $namespace;
@@ -508,10 +514,13 @@ class PHPDocTypesSniff implements Sniff
             if ($namespace != '' && $namespace[0] != "\\") {
                 $namespace = "\\" . $namespace;
             }
-            if ($this->token['code'] == T_OPEN_USE_GROUP /*|| $this->token['code'] == T_OPEN_CURLY_BRACKET*/) {
-                $namespacestart = $namespace;  // TODO: Check there's a trailing backslash?
+            if ($this->token['code'] == T_OPEN_USE_GROUP) {
+                $namespacestart = $namespace;
+                if ($namespacestart && strrpos($namespacestart, "\\") != strlen($namespacestart) - 1) {
+                    throw new \Exception();
+                }
                 $typestart = $type;
-                $this->advance();
+                $this->advance(T_OPEN_USE_GROUP);
                 do {
                     $namespaceend = '';
                     $type = $typestart;
@@ -537,17 +546,13 @@ class PHPDocTypesSniff implements Sniff
                     $alias = $asalias ?? $alias;
                     if ($this->pass == 2 && $type == 'class') {
                         end($this->scopes)->uses[$alias] = $namespace;
-                        //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
                     }
                     $more = ($this->token['code'] == T_COMMA);
                     if ($more) {
                         $this->advance(T_COMMA);
                     }
                 } while ($more);
-                if ($this->token['code'] != T_CLOSE_USE_GROUP /*&& $this->token['code'] != T_CLOSE_CURLY_BRACKET*/) {
-                    throw new \Exception();
-                }
-                $this->advance();
+                $this->advance(T_CLOSE_USE_GROUP);
             } else {
                 $alias = (strrpos($namespace, "\\") !== false) ?
                     substr($namespace, strrpos($namespace, "\\") + 1)
@@ -602,7 +607,7 @@ class PHPDocTypesSniff implements Sniff
         if ($parent && $parent[0] != "\\") {
             $parent = end($this->scopes)->namespace . "\\" . $parent;
         }
-        $interfaces = $this->file->findImplementedInterfaceNames($this->fileptr); // TODO: Only for classes?
+        $interfaces = $this->file->findImplementedInterfaceNames($this->fileptr);
         if (!is_array($interfaces)) {
             $interfaces = [];
         }
@@ -625,7 +630,6 @@ class PHPDocTypesSniff implements Sniff
             // Store details.
             $this->artifacts[$name] = (object)['extends' => $parent, 'implements' => $interfaces];
         } elseif ($this->pass == 2) {
-            // TODO: Check for missing comment if classish named?
             // Check and store templates.
             if ($this->comment && isset($this->comment->tags['@template'])) {
                 $this->processTemplates();
@@ -669,7 +673,7 @@ class PHPDocTypesSniff implements Sniff
                     $this->advance(T_SEMICOLON);
                 }
             } while ($this->token['code'] != T_CLOSE_CURLY_BRACKET);
-            $this->advance(T_CLOSE_CURLY_BRACKET); // TODO: Delay this?
+            $this->advance(T_CLOSE_CURLY_BRACKET);
         }
     }
 
@@ -755,7 +759,7 @@ class PHPDocTypesSniff implements Sniff
                                 'phpdoc_fun_param_type_mismatch',
                                 [$varnum + 1]
                             );
-                        } // TODO: Check doc type is nullable if native type is explicitly so?
+                        }
                         if ($paramdata->var != $docparamdata->var) {
                             $this->file->addError(
                                 'PHPDoc function parameter %s name mismatch',
@@ -809,7 +813,7 @@ class PHPDocTypesSniff implements Sniff
                             $this->fileptr,
                             'phpdoc_fun_ret_type_mismatch'
                         );
-                    } // TODO: Check doc type is nullable if native type is?
+                    }
                 }
             }
         }
@@ -873,7 +877,7 @@ class PHPDocTypesSniff implements Sniff
                     [T_TYPE_UNION, T_TYPE_INTERSECTION, T_NULLABLE, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS,
                     T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING,
                     T_NULL, T_ARRAY, T_OBJECT, T_SELF, T_PARENT, T_FALSE, T_TRUE, T_CALLABLE, T_STATIC, ]
-                )  // TODO: Static can't be part of a variable type?
+                )
             ) {
                 $this->advance();
             }
@@ -935,7 +939,7 @@ class PHPDocTypesSniff implements Sniff
                             $this->fileptr,
                             'phpdoc_var_type_mismatch'
                         );
-                    } // TODO: Check doc type is nullable if native type is?
+                    }
                 }
             }
         }
