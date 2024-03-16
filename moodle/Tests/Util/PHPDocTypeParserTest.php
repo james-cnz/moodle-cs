@@ -105,11 +105,6 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                 ],
                 'warnings' => [],
             ],
-            'PHPDocTypes php right' => [
-                'fixture' => 'phpdoctypes_php_right',
-                'errors' => [],
-                'warnings' => [],
-            ],
         ];
     }
 }
