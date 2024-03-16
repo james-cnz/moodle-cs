@@ -17,86 +17,99 @@
 
 namespace MoodleHQ\MoodleCS\moodle\Tests\Util;
 
-use PHPUnit\Framework\TestCase;
-use MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser;
+use MoodleHQ\MoodleCS\moodle\Tests\MoodleCSBaseTestCase;
 
 /**
- * Tests for the PHPDocTypeParser.
+ * Test the PHPDocTypeParser.
  *
- * @author    James Calder
- * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-/**
- * Tests for the PHPDocTypeParser.
+ * @author     James Calder
+ * @copyright  based on work by 2024 onwards Andrew Lyons <andrew@nicols.co.uk>
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  * @covers \MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser
  */
-final class PHPDocTypeParserTest extends TestCase
+class PHPDocTypeParserTest extends MoodleCSBaseTestCase
 {
     /**
-     * Test valid types.
-     *
-     * @return void
+     * @dataProvider provider
+     * @param string $fixture
+     * @param array $errors
+     * @param array $warnings
      */
-    public function testValidTypes()
-    {
-        $typeparser = new PHPDocTypeParser(null);
-        // Boolean types
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'bool|boolean|true|false', 0, false)->type,
-            'bool'
-        );
-        // Integer types
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'int|integer', 0, false)->type,
-            'int'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'positive-int|negative-int|non-positive-int|non-negative-int', 0, false)->type,
-            'int'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'int<0, 100>|int<min, 100>|int<50, max>|int<-100, max>', 0, false)->type,
-            'int'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, '234|-234|int-mask<1, 2, 4>', 0, false)->type,
-            'int'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, '1_000|-1_000|int-mask<types_valid::INT_ONE, types_valid::INT_TWO>', 0, false)->type,
-            'int'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'int-mask-of<types_valid::INT_*>', 0, false)->type,
-            'int'
-        );
-        // Float types
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'float|double|1.0|-1.0', 0, false)->type,
-            'float'
-        );
-        // String types
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'string|class-string|class-string<types_valid>', 0, false)->type,
-            'string'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'callable-string|numeric-string|non-empty-string', 0, false)->type,
-            'string'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, 'non-falsy-string|truthy-string|literal-string', 0, false)->type,
-            'string'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, "'foo'|'bar'", 0, false)->type,
-            'string'
-        );
-        $this->assertSame(
-            $typeparser->parseTypeAndVar(null, "class-string<types_valid|types_valid_interface>|'\\''", 0, false)->type,
-            'string'
-        );
+    public function testPHPDocTypesParser(
+        string $fixture,
+        array $errors,
+        array $warnings
+    ): void {
+        $this->setStandard('moodle');
+        $this->setSniff('moodle.Commenting.PHPDocTypes');
+        $this->setFixture(sprintf("%s/fixtures/%s.php", __DIR__, $fixture));
+        $this->setWarnings($warnings);
+        $this->setErrors($errors);
+        /*$this->setApiMappings([
+            'test' => [
+                'component' => 'core',
+                'allowspread' => true,
+                'allowlevel2' => false,
+            ],
+        ]);*/
+
+        $this->verifyCsResults();
+    }
+
+    public static function provider(): array {
+        return [
+            'PHPDocTypes types right' => [
+                'fixture' => 'phpdoctypes_types_right',
+                'errors' => [],
+                'warnings' => [],
+            ],
+            'PHPDocTypes types wrong parse' => [
+                'fixture' => 'phpdoctypes_types_wrong_parse',
+                'errors' => [
+                    45 => 'PHPDoc function parameter 1 name missing or malformed',
+                    52 => 'PHPDoc function parameter 1 name missing or malformed',
+                    57 => 'PHPDoc var type missing or malformed',
+                    60 => 'PHPDoc var type missing or malformed',
+                    64 => 'PHPDoc var type missing or malformed',
+                    68 => 'PHPDoc var type missing or malformed',
+                    72 => 'PHPDoc var type missing or malformed',
+                    75 => 'PHPDoc var type missing or malformed',
+                    78 => 'PHPDoc var type missing or malformed',
+                    81 => 'PHPDoc var type missing or malformed',
+                    84 => 'PHPDoc var type missing or malformed',
+                    87 => 'PHPDoc var type missing or malformed',
+                    90 => 'PHPDoc var type missing or malformed',
+                    94 => 'PHPDoc var type missing or malformed',
+                    97 => 'PHPDoc var type missing or malformed',
+                    100 => 'PHPDoc var type missing or malformed',
+                    103 => 'PHPDoc var type missing or malformed',
+                    106 => 'PHPDoc var type missing or malformed',
+                    109 => 'PHPDoc var type missing or malformed',
+                    112 => 'PHPDoc var type missing or malformed',
+                    115 => 'PHPDoc var type missing or malformed',
+                    121 => 'PHPDoc function parameter 1 type missing or malformed',
+                    126 => 'PHPDoc var type missing or malformed',
+                    129 => 'PHPDoc var type missing or malformed',
+                ],
+                'warnings' => [],
+            ],
+            'PHPDocTypes types wrong match' => [
+                'fixture' => 'phpdoctypes_types_wrong_match',
+                'errors' => [
+                    45 => 'PHPDoc function parameter 1 type mismatch',
+                    52 => 'PHPDoc function parameter 1 type mismatch',
+                    59 => 'PHPDoc function return type mismatch',
+                    66 => 'PHPDoc function parameter 1 type mismatch',
+                    73 => 'PHPDoc function parameter 1 type mismatch',
+                ],
+                'warnings' => [],
+            ],
+            'PHPDocTypes php right' => [
+                'fixture' => 'phpdoctypes_php_right',
+                'errors' => [],
+                'warnings' => [],
+            ],
+        ];
     }
 }

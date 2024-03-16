@@ -559,7 +559,6 @@ class PHPDocTypesSniff implements Sniff
                 $alias = $asalias ?? $alias;
                 if ($this->pass == 2 && $type == 'class') {
                     end($this->scopes)->uses[$alias] = $namespace;
-                    //$this->file->addWarning('Found use %s', $this->fileptr, 'debug', [$alias]);
                 }
             }
             $more = ($this->token['code'] == T_COMMA);
@@ -850,7 +849,7 @@ class PHPDocTypesSniff implements Sniff
                     [T_TYPE_UNION, T_TYPE_INTERSECTION, T_NULLABLE, T_OPEN_PARENTHESIS, T_CLOSE_PARENTHESIS,
                     T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED, T_NAME_RELATIVE, T_NS_SEPARATOR, T_STRING,
                     T_NULL, T_ARRAY, T_OBJECT, T_SELF, T_PARENT, T_FALSE, T_TRUE, T_CALLABLE, T_STATIC, ]
-                )
+                )  // TODO: Static can't be part of a variable type?
             ) {
                 $this->advance();
             }
