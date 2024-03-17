@@ -26,9 +26,9 @@ class dummy_with_properties {
      */
     var $documented1;
     /**
-     * @var mixed $documented2 I'm just a dummy!
+     * @var ?string $documented2 I'm just a dummy!
      */
-    var ?string $documented2;
+    var mixed $documented2;
     /**
      * @var mixed $documented3 I'm just a dummy!
      */

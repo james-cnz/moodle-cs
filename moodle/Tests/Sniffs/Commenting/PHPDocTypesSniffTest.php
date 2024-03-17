@@ -96,8 +96,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
             'PHPDocTypes tags general wrong' => [
                 'fixture' => 'phpdoctypes_tags_general_wrong',
                 'errors' => [
-                    44 => 'PHPDoc function parameter 1 type missing or malformed',
-                    44 => 'PHPDoc function parameter 2 type missing or malformed',
+                    44 => 2,
                     54 => "PHPDoc number of function @param tags doesn't match number of parameters",
                     61 => "PHPDoc number of function @param tags doesn't match number of parameters",
                     71 => "PHPDoc number of function @param tags doesn't match number of parameters",
