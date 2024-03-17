@@ -182,7 +182,7 @@ class PHPDocTypesSniff implements Sniff
                 continue;
             }
 
-            // Ignore protected/private function parameters.
+            // Ignore constructor property promotion.  This has already been checked.
             if (
                 end($this->scopes)->type == 'function' && !end($this->scopes)->opened
                 && in_array($this->token['code'], [T_PUBLIC, T_PROTECTED, T_PRIVATE])

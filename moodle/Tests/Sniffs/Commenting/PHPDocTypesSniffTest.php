@@ -59,8 +59,8 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
 
     public static function provider(): array {
         return [
-            'PHPDocTypes php right' => [
-                'fixture' => 'phpdoctypes_php_right',
+            'PHPDocTypes general right' => [
+                'fixture' => 'phpdoctypes_general_right',
                 'errors' => [],
                 'warnings' => [],
             ],

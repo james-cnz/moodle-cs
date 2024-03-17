@@ -92,6 +92,7 @@ class php_valid extends php_valid_parent implements php_valid_interface {
      *   a: int,
      *   b: string
      * } $x
+     * @return void
      */
     function multiline_comment(object $x): void {
     }

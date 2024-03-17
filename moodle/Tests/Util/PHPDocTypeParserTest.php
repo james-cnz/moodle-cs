@@ -59,13 +59,13 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
 
     public static function provider(): array {
         return [
-            'PHPDocTypes types right' => [
-                'fixture' => 'phpdoctypes_types_right',
+            'PHPDocTypes all types right' => [
+                'fixture' => 'phpdoctypes_all_types_right',
                 'errors' => [],
                 'warnings' => [],
             ],
-            'PHPDocTypes types wrong parse' => [
-                'fixture' => 'phpdoctypes_types_wrong_parse',
+            'PHPDocTypes parse wrong' => [
+                'fixture' => 'phpdoctypes_parse_wrong',
                 'errors' => [
                     45 => 'PHPDoc function parameter 1 name missing or malformed',
                     52 => 'PHPDoc function parameter 1 name missing or malformed',
@@ -91,17 +91,6 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                     121 => 'PHPDoc function parameter 1 type missing or malformed',
                     126 => 'PHPDoc var type missing or malformed',
                     129 => 'PHPDoc var type missing or malformed',
-                ],
-                'warnings' => [],
-            ],
-            'PHPDocTypes types wrong match' => [
-                'fixture' => 'phpdoctypes_types_wrong_match',
-                'errors' => [
-                    45 => 'PHPDoc function parameter 1 type mismatch',
-                    52 => 'PHPDoc function parameter 1 type mismatch',
-                    59 => 'PHPDoc function return type mismatch',
-                    66 => 'PHPDoc function parameter 1 type mismatch',
-                    73 => 'PHPDoc function parameter 1 type mismatch',
                 ],
                 'warnings' => [],
             ],

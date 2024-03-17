@@ -403,7 +403,7 @@ class types_valid extends types_valid_parent {
     }
 
     /**
-     * Built-in classes
+     * Built-in classes with inheritance
      * @param Traversable<string>|Iterator|Generator|IteratorAggregate $traversable
      * @param Iterator|Generator $iterator
      * @param Throwable|Exception|Error $throwable
@@ -419,7 +419,7 @@ class types_valid extends types_valid_parent {
     }
 
     /**
-     * SPL classes
+     * SPL classes with inheritance (a few examples only)
      * @param Iterator|SeekableIterator<int, string>|ArrayIterator $iterator
      * @param SeekableIterator<int, string>|ArrayIterator $seekableiterator
      * @param Countable|ArrayIterator $countable
