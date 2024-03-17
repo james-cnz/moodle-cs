@@ -57,6 +57,9 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
         $this->verifyCsResults();
     }
 
+    /**
+     * @return array
+     */
     public static function provider(): array {
         return [
             'PHPDocTypes all types right' => [

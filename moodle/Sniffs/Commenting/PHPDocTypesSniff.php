@@ -116,16 +116,10 @@ class PHPDocTypesSniff implements Sniff
         } catch (\Exception $e) {
             // TODO: Remove debug info.
             $this->file->addError(
-                'The PHPDoc type checker failed to parse the file.  PHPDoc type checks were not performed.  ' .
-                'Debug info: file %s line %s',
+                'The PHPDoc type sniff failed to parse the file.  PHPDoc type checks were not performed.',
                 $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
-                'phpdoc_type_parse',
-                [$e->getFile(), $e->getLine()]
+                'phpdoc_type_parse'
             );
-            /*echo "*** php file: ". $this->file->path . "\n";
-            echo "*** php token type: " . $this->token['code'] . "  php content: " . $this->token['content']. "\n";
-            echo "*** prog file: ". $e->getFile() . "  prog line: " . $e->getLine() . "\n";
-            echo $e->getTraceAsString() . "\n";*/
         }
     }
 

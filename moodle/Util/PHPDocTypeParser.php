@@ -275,7 +275,7 @@ class PHPDocTypeParser
         // Try to parse template name.
         $savednexts = $this->nexts;
         try {
-            if (!($this->next != null && ctype_alpha($this->next[0]))) {
+            if (!($this->next != null && (ctype_alpha($this->next[0]) || $this->next[0] == '_'))) {
                 throw new \Exception("Error parsing type, expected variable, saw \"{$this->next}\".");
             }
             $variable = $this->parseToken();

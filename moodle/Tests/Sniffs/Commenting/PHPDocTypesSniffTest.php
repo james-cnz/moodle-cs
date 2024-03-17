@@ -57,6 +57,9 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
         $this->verifyCsResults();
     }
 
+    /**
+     * @return array
+     */
     public static function provider(): array {
         return [
             'PHPDocTypes general right' => [
