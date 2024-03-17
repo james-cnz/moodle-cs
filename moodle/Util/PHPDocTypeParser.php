@@ -162,8 +162,8 @@ class PHPDocTypeParser
      * @param string $text the text to parse
      * @param 0|1|2|3 $getwhat what to get 0=type only 1=also var 2=also modifiers (& ...) 3=also default
      * @param bool $gowide if we can't determine the type, should we assume wide (for native type) or narrow (for PHPDoc)?
-     * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string}
-     *          the simplified type, variable, and remaining text
+     * @return object{type: ?non-empty-string, passsplat: string, var: ?non-empty-string, rem: string}
+     *          the simplified type, pass by reference & splat, variable name, and remaining text
      */
     public function parseTypeAndVar(?object $scope, string $text, int $getwhat, bool $gowide): object {
 
@@ -196,31 +196,31 @@ class PHPDocTypeParser
             $type = null;
         }
 
-        // Try to parse variable.
+        // Try to parse pass by reference and splat.
+        $passsplat = '';
+        if ($getwhat >= 2) {
+            if ($this->next == '&') {
+                // Not adding this for code smell check,
+                // because the old checker disallowed pass by reference & in PHPDocs,
+                // so adding this would be a nusiance for people who changed their PHPDocs
+                // to conform to the previous rules, and would make it impossible to conform
+                // if both checkers were used.
+                $this->parseToken('&');
+            }
+            if ($this->next == '...') {
+                // Add to variable name for code smell check.
+                $passsplat .= $this->parseToken('...');
+            }
+        }
+
+        // Try to parse variable and default value.
         if ($getwhat >= 1) {
             $savednexts = $this->nexts;
             try {
-                $variable = '';
-                if ($getwhat >= 2) {
-                    if ($this->next == '&') {
-                        // Not adding this for code smell check,
-                        // because the old checker disallowed pass by reference & in PHPDocs,
-                        // so adding this would be a nusiance for people who changed their PHPDocs
-                        // to conform to the previous rules, and would make it impossible to conform
-                        // if both checkers were used.
-                        $this->parseToken('&');
-                    }
-                    if ($this->next == '...') {
-                        // Add to variable name for code smell check.
-                        $variable .= $this->parseToken('...');
-                    }
-                }
                 if (!($this->next != null && $this->next[0] == '$')) {
                     throw new \Exception("Error parsing type, expected variable, saw \"{$this->next}\".");
                 }
-                $variable .= $this->next;
-                assert($variable != '');
-                $this->parseToken();
+                $variable = $this->parseToken();
                 if (
                     !($this->next == null || $getwhat >= 3 && $this->next == '='
                         || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
@@ -248,7 +248,8 @@ class PHPDocTypeParser
             $variable = null;
         }
 
-        return (object)['type' => $type, 'var' => $variable, 'rem' => trim(substr($text, $this->nexts[0]->startpos))];
+        return (object)['type' => $type, 'passsplat' => $passsplat, 'var' => $variable,
+            'rem' => trim(substr($text, $this->nexts[0]->startpos))];
     }
 
     /**
@@ -256,7 +257,7 @@ class PHPDocTypeParser
      * @param ?object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $scope
      * @param string $text the text to parse
      * @return object{type: ?non-empty-string, var: ?non-empty-string, rem: string}
-     *          the simplified type, variable, and remaining text
+     *          the simplified type, template name, and remaining text
      */
     public function parseTemplate(?object $scope, string $text): object {
 
@@ -271,15 +272,13 @@ class PHPDocTypeParser
         $this->nexts = [];
         $this->next = $this->next();
 
-        // Try to parse variable.
+        // Try to parse template name.
         $savednexts = $this->nexts;
         try {
             if (!($this->next != null && ctype_alpha($this->next[0]))) {
                 throw new \Exception("Error parsing type, expected variable, saw \"{$this->next}\".");
             }
-            $variable = $this->next;
-            assert($variable != '');
-            $this->parseToken();
+            $variable = $this->parseToken();
             if (
                 !($this->next == null || $this->next == 'of'
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))

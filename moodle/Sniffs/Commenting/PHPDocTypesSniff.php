@@ -719,7 +719,7 @@ class PHPDocTypesSniff implements Sniff
                 }
                 if (count($this->comment->tags['@param']) != count($parameters)) {
                     $this->file->addError(
-                        'PHPDoc number of function parameters doesn\'t match actual number',
+                        "PHPDoc number of function @param tags doesn't match actual number of parameters",
                         $this->fileptr,
                         'phpdoc_fun_param_count'
                     );
@@ -760,6 +760,14 @@ class PHPDocTypesSniff implements Sniff
                                 [$varnum + 1]
                             );
                         }
+                        if ($paramdata->passsplat != $docparamdata->passsplat) {
+                            $this->file->addWarning(
+                                'PHPDoc function parameter %s splat mismatch',
+                                $this->fileptr,
+                                'phpdoc_fun_param_pass_splat_mismatch',
+                                [$varnum + 1]
+                            );
+                        }
                         if ($paramdata->var != $docparamdata->var) {
                             $this->file->addError(
                                 'PHPDoc function parameter %s name mismatch',
@@ -780,14 +788,14 @@ class PHPDocTypesSniff implements Sniff
                 // The old checker didn't check this.
                 /*if (count($this->comment->tags['@return']) < 1 && $name != '__construct') {
                     $this->file->addError(
-                        'PHPDoc missing function return type',
+                        'PHPDoc missing function @return tag',
                         $this->fileptr,
                         'phpdoc_fun_ret_missing'
                     );
                 } else*/
                 if (count($this->comment->tags['@return']) > 1) {
                     $this->file->addError(
-                        'PHPDoc multiple function return types--Put in one tag, seperated by vertical bars |',
+                        'PHPDoc multiple function @return tags--Put in one tag, seperated by vertical bars |',
                         $this->fileptr,
                         'phpdoc_fun_ret_multiple'
                     );
@@ -807,7 +815,13 @@ class PHPDocTypesSniff implements Sniff
                         0,
                         false
                     );
-                    if (!$this->typeparser->comparetypes($retdata->type, $docretdata->type)) {
+                    if (!$docretdata->type) {
+                        $this->file->addError(
+                            'PHPDoc function return type missing or malformed',
+                            $this->fileptr,
+                            'phpdoc_fun_ret_type'
+                        );
+                    } elseif (!$this->typeparser->comparetypes($retdata->type, $docretdata->type)) {
                         $this->file->addError(
                             'PHPDoc function return type mismatch',
                             $this->fileptr,
@@ -907,9 +921,9 @@ class PHPDocTypesSniff implements Sniff
                     $this->comment->tags['@var'] = [];
                 }
                 if (count($this->comment->tags['@var']) < 1) {
-                    $this->file->addError('PHPDoc missing var', $this->fileptr, 'phpdoc_var_missing');
+                    $this->file->addError('PHPDoc missing @var tag', $this->fileptr, 'phpdoc_var_missing');
                 } elseif (count($this->comment->tags['@var']) > 1) {
-                    $this->file->addError('PHPDoc multiple vars', $this->fileptr, 'phpdoc_var_multiple');
+                    $this->file->addError('PHPDoc multiple @var tags', $this->fileptr, 'phpdoc_var_multiple');
                 }
                 $vardata = ($properties && $properties['type']) ?
                     $this->typeparser->parseTypeAndVar(

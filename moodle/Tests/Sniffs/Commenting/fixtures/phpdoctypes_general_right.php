@@ -22,7 +22,7 @@
  * to verify we are actually checking against correct examples.
  *
  * @package   local_codechecker
- * @copyright 2023 Otago Polytechnic
+ * @copyright 2024 Otago Polytechnic
  * @author    James Calder
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
  */
