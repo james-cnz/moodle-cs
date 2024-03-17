@@ -103,7 +103,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     80 => "PHPDoc number of function @param tags doesn't match actual number of parameters",
                     90 => 'PHPDoc function parameter 2 type mismatch',
                     100 => 'PHPDoc function parameter 1 type mismatch',
-                    110 => 'PHPDoc function parameter 2 type mismatch',
+                    110 => 'PHPDoc function parameter 1 type mismatch',
                     120 => 'PHPDoc function parameter 2 type mismatch',
                     129 => 'PHPDoc function return type missing or malformed',
                 ],
