@@ -664,7 +664,49 @@ class PHPDocTypesSniff implements Sniff
             if ($this->comment && isset($this->comment->tags['@template'])) {
                 $this->processTemplates($scope);
             }
-            // TODO: Properties.
+            // Check properties.
+            if ($this->comment) {
+                foreach (['@property', '@property-read', '@property-write'] as $tagname) {
+
+                    if (!isset($this->comment->tags[$tagname])) {
+                        $this->comment->tags[$tagname] = [];
+                    }
+
+                    for ($propnum = 0; $propnum < count($this->comment->tags[$tagname]); $propnum++) {
+                        $docpropdata = $this->typeparser->parseTypeAndVar(
+                            $scope,
+                            $this->comment->tags[$tagname][$propnum]->content,
+                            1,
+                            false
+                        );
+                        if (!$docpropdata->type) {
+                            $this->file->addError(
+                                'PHPDoc class property type missing or malformed',
+                                $this->comment->tags[$tagname][$propnum]->ptr,
+                                'phpdoc_class_prop_type'
+                            );
+                        } elseif (!$docpropdata->var) {
+                            $this->file->addError(
+                                'PHPDoc class property name missing or malformed',
+                                $this->comment->tags[$tagname][$propnum]->ptr,
+                                'phpdoc_class_prop_name'
+                            );
+                        } elseif ($docpropdata->fixed) {
+                            $fix = $this->file->addFixableWarning(
+                                "PHPDoc class property type doesn't conform to recommended style",
+                                $this->comment->tags[$tagname][$propnum]->ptr,
+                                'phpdoc_class_prop_type_style'
+                            );
+                            if ($fix) {
+                                $this->fixCommentTag(
+                                    $this->comment->tags[$tagname][$propnum],
+                                    $docpropdata->fixed
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         $parametersptr = isset($this->token['parenthesis_opener']) ? $this->token['parenthesis_opener'] : null;
@@ -1076,8 +1118,7 @@ class PHPDocTypesSniff implements Sniff
                         $this->file->addError(
                             'PHPDoc var type missing or malformed',
                             $this->comment->tags['@var'][$varnum]->ptr,
-                            'phpdoc_var_type',
-                            [$varnum + 1]
+                            'phpdoc_var_type'
                         );
                     } elseif (!$this->typeparser->comparetypes($vardata->type, $docvardata->type)) {
                         $this->file->addError(
