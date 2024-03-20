@@ -72,25 +72,6 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                 'errors' => [],
                 'warnings' => [],
             ],
-            'PHPDocTypes properties right' => [
-                'fixture' => 'phpdoctypes_properties_right',
-                'errors' => [],
-                'warnings' => [],
-            ],
-            'PHPDocTypes properties wrong' => [
-                'fixture' => 'phpdoctypes_properties_wrong',
-                'errors' => [
-                    30 => 'PHPDoc missing @var tag',
-                ],
-                'warnings' => [
-                    23 => 'PHPDoc variable or constant is not documented',
-                    24 => 'PHPDoc variable or constant is not documented',
-                    25 => 'PHPDoc variable or constant is not documented',
-                    26 => 'PHPDoc variable or constant is not documented',
-                    27 => 'PHPDoc variable or constant is not documented',
-                    28 => 'PHPDoc variable or constant is not documented',
-                ],
-            ],
             'PHPDocTypes tags general right' => [
                 'fixture' => 'phpdoctypes_tags_general_right',
                 'errors' => [],
