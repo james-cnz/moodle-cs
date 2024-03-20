@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 // This file is part of Moodle - https://moodle.org/
 //
@@ -22,6 +22,8 @@
  * @author     James Calder
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
  */
+
+declare(strict_types=1);
 
 namespace MoodleHQ\MoodleCS\moodle\Sniffs\Commenting;
 
@@ -554,7 +556,6 @@ class PHPDocTypesSniff implements Sniff
         // Loop until we've fetched all imports.
         $more = false;
         do {
-
             // Get the type.
             $type = 'class';
             if ($this->token['code'] == T_FUNCTION) {

@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 // This file is part of Moodle - https://moodle.org/
 //
@@ -25,6 +25,8 @@
  * @author      James Calder
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
  */
+
+declare(strict_types=1);
 
 namespace MoodleHQ\MoodleCS\moodle\Util;
 
