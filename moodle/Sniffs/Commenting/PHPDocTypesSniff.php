@@ -133,7 +133,6 @@ class PHPDocTypesSniff implements Sniff
         $this->comment = null;
 
         $this->processBlock($scope);
-
     }
 
     /**
@@ -153,7 +152,6 @@ class PHPDocTypesSniff implements Sniff
         $scope->closer = ($this->token['code'] == T_OPEN_TAG) ?
             count($this->tokens)
             : $this->token['scope_closer'];
-        //echo "processBlock start at {$this->fileptr} closer at {$scope->closer}\n";
         $this->advance();
 
         while (true) {
@@ -173,18 +171,15 @@ class PHPDocTypesSniff implements Sniff
                 $this->advance();
             }
 
-            // Check for the end of the scope.
+
             if ($this->fileptr >= $scope->closer) {
+                // End of the block.
                 break;
-            }
-
-            // Namespace.
-            elseif ($this->token['code'] == T_NAMESPACE && $scope->type == 'root') {
+            } elseif ($this->token['code'] == T_NAMESPACE && $scope->type == 'root') {
+                // Namespace.
                 $this->processNamespace($scope);
-            }
-
-            // Use.
-            elseif ($this->token['code'] == T_USE) {
+            } elseif ($this->token['code'] == T_USE) {
+                // Use.
                 if ($scope->type == 'root' | $scope->type == 'namespace') {
                     $this->processUse($scope);
                 } elseif ($scope->type == 'classish') {
@@ -192,10 +187,7 @@ class PHPDocTypesSniff implements Sniff
                 } else {
                    throw new \Exception();
                 }
-            }
-
-            // Declarations.
-            elseif (
+            } elseif (
                 in_array(
                     $this->token['code'],
                     [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
@@ -204,6 +196,7 @@ class PHPDocTypesSniff implements Sniff
                     T_CONST, T_VAR, ]
                 )
             ) {
+                // Declarations.
                 // Fetch comment.
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
@@ -231,10 +224,8 @@ class PHPDocTypesSniff implements Sniff
                     $this->processVariable($scope);
                 }
                 $this->comment = null;
-            }
-
-            // We got something unrecognised.
-            else {
+            } else {
+                // We got something unrecognised.
                 throw new \Exception();
             }
         }
@@ -831,7 +822,6 @@ class PHPDocTypesSniff implements Sniff
             $this->advanceTo($blockptr);
             $this->processBlock($scope);
         };
-
     }
 
     /**
@@ -848,23 +838,18 @@ class PHPDocTypesSniff implements Sniff
         $this->advance(T_OPEN_PARENTHESIS);
 
         while (true) {
-
             // Skip irrelevant tokens.
             while (
-                !in_array(
-                    $this->token['code'], [T_ANON_CLASS, T_CLOSURE /*, T_SEMICOLON*/]
-                )
+                !in_array($this->token['code'], [T_ANON_CLASS, T_CLOSURE])
                 && $this->fileptr < $scope->closer
             ) {
                 $this->advance();
             }
 
-            // Check for the end of the declaration.
             if ($this->fileptr >= $scope->closer) {
+                // End of the parameters.
                 break;
-            }
-
-            elseif ($this->token['code'] == T_ANON_CLASS) {
+            } elseif ($this->token['code'] == T_ANON_CLASS) {
                 // Classish thing.
                 $this->processClassish($scope);
             } elseif ($this->token['code'] == T_CLOSURE) {
@@ -874,7 +859,6 @@ class PHPDocTypesSniff implements Sniff
                 // Something unrecognised.
                 throw new \Exception();
             }
-
         }
         $this->advance(T_CLOSE_PARENTHESIS);
     }
