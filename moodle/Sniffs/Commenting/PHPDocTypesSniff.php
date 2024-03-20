@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 // This file is part of Moodle - https://moodle.org/
 //
@@ -37,7 +37,8 @@ class PHPDocTypesSniff implements Sniff
     /** @var ?File the current file */
     protected ?File $file = null;
 
-    /** @var array{'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int}[]
+    /** @var array{'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
+     *              'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int}[]
      * file tokens */
     protected array $tokens = [];
 
@@ -66,11 +67,13 @@ class PHPDocTypesSniff implements Sniff
     protected ?object $comment = null;
 
     /** @var array{'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
-     *              'parenthesis_opener'?: int, 'parenthesis_closer'?: int} the current token */
+     *              'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int}
+     * the current token */
     protected array $token = ['code' => null, 'content' => ''];
 
     /** @var array{'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
-     *              'parenthesis_opener'?: int, 'parenthesis_closer'?: int} the previous token */
+     *              'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int}
+     * the previous token */
     protected array $tokenprevious = ['code' => null, 'content' => ''];
 
     /**
@@ -284,6 +287,18 @@ class PHPDocTypesSniff implements Sniff
             $this->processComment();
             $this->commentpendingcounter = 2;
             $nextptr = $this->fileptr;
+        }
+
+        // Allow attributes between the comment and what it relates to.
+        while (
+            $nextptr < count($this->tokens)
+            && in_array($this->tokens[$nextptr]['code'], [T_WHITESPACE, T_ATTRIBUTE])
+        ) {
+            if ($this->tokens[$nextptr]['code'] == T_ATTRIBUTE) {
+                $nextptr = $this->tokens[$nextptr]['attribute_closer'] + 1;
+            } else {
+                $nextptr++;
+            }
         }
 
         $this->fileptr = $nextptr;
