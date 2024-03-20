@@ -667,7 +667,6 @@ class PHPDocTypesSniff implements Sniff
             // Check properties.
             if ($this->comment) {
                 foreach (['@property', '@property-read', '@property-write'] as $tagname) {
-
                     if (!isset($this->comment->tags[$tagname])) {
                         $this->comment->tags[$tagname] = [];
                     }
