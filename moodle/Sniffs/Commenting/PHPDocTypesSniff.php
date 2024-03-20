@@ -94,7 +94,7 @@ class PHPDocTypesSniff implements Sniff
             $this->tokens = $phpcsfile->getTokens();
 
             // Check we haven't already seen this file.
-            for ($tagcounter = $stackptr - 1; $tagcounter > 0; $tagcounter--) {
+            for ($tagcounter = $stackptr - 1; $tagcounter >= 0; $tagcounter--) {
                 if ($this->tokens[$tagcounter]['code'] == T_OPEN_TAG) {
                     return;
                 }
@@ -386,6 +386,7 @@ class PHPDocTypesSniff implements Sniff
             }
 
             // For each line, until we reach a new tag.
+            // Note: the logic for fixing a comment tag must exactly match this.
             do {
                 $newline = false;
                 // Fetch line content.
@@ -415,6 +416,61 @@ class PHPDocTypesSniff implements Sniff
             $this->commentpending->tags[$tagtype][] = $tag;
         }
         $this->advanceComment(T_DOC_COMMENT_CLOSE_TAG);
+    }
+
+    /**
+     * Fix a PHPDoc comment tag.
+     * @param object{ptr: int, content: string, cstartptr: ?int, cendptr: ?int} $tag
+     * @param string $replacement
+     * @return void
+     * @phpstan-impure
+     */
+    protected function fixCommentTag(object $tag, string $replacement): void {
+        $replacementarray = explode("\n", $replacement);
+        $replacementcounter = 0;
+        $donereplacement = false;
+        $ptr = $tag->cstartptr;
+
+        $this->file->fixer->beginChangeset();
+
+        // For each line, until we reach a new tag.
+        // Note: the logic for this must exactly match that for processing a comment tag.
+        do {
+            $newline = false;
+            // Change line content.
+            while ($this->tokens[$ptr]['code'] != T_DOC_COMMENT_CLOSE_TAG && !$newline) {
+                $newline = in_array(substr($this->tokens[$ptr]['content'], -1), ["\n", "\r"]);
+                if (!$newline) {
+                    if ($donereplacement || $replacementarray[$replacementcounter] === "") {
+                        throw new \Exception();
+                    }
+                    $this->file->fixer->replaceToken($ptr, $replacementarray[$replacementcounter]);
+                    $donereplacement = true;
+                } else {
+                    if (!($donereplacement || $replacementarray[$replacementcounter] === "")) {
+                        throw new \Exception();
+                    }
+                    $replacementcounter++;
+                    $donereplacement = false;
+                }
+                $ptr++;
+            }
+            // Skip next line starting stuff.
+            while (
+                in_array($this->tokens[$ptr]['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_STAR])
+                    || $this->tokens[$ptr]['code'] == T_DOC_COMMENT_WHITESPACE
+                        && !in_array(substr($this->tokens[$ptr]['content'], -1), ["\n", "\r"])
+            ) {
+                $ptr++;
+            }
+        } while (!in_array($this->tokens[$ptr]['code'], [T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_TAG]));
+
+        if (!($replacementcounter == count($replacementarray) - 1
+            && ($donereplacement || $replacementarray[count($replacementarray) - 1] === ""))) {
+            throw new \Exception();
+        }
+
+        $this->file->fixer->endChangeset();
     }
 
     /**
@@ -738,29 +794,45 @@ class PHPDocTypesSniff implements Sniff
                             3,
                             true
                         );
-                        if (!$this->typeparser->comparetypes($paramdata->type, $docparamdata->type)) {
-                            $this->file->addError(
-                                'PHPDoc function parameter %s type mismatch',
-                                $this->comment->tags['@param'][$varnum]->ptr,
-                                'phpdoc_fun_param_type_mismatch',
-                                [$varnum + 1]
-                            );
-                        }
-                        if ($paramdata->passsplat != $docparamdata->passsplat) {
-                            $this->file->addWarning(
-                                'PHPDoc function parameter %s splat mismatch',
-                                $this->comment->tags['@param'][$varnum]->ptr,
-                                'phpdoc_fun_param_pass_splat_mismatch',
-                                [$varnum + 1]
-                            );
-                        }
                         if ($paramdata->var != $docparamdata->var) {
+                            // Function parameter names don't match.
+                            // Don't do any more checking, because the parameters might be in the wrong order.
                             $this->file->addError(
                                 'PHPDoc function parameter %s name mismatch',
                                 $this->comment->tags['@param'][$varnum]->ptr,
                                 'phpdoc_fun_param_name_mismatch',
                                 [$varnum + 1]
                             );
+                        } else {
+                            if (!$this->typeparser->comparetypes($paramdata->type, $docparamdata->type)) {
+                                $this->file->addError(
+                                    'PHPDoc function parameter %s type mismatch',
+                                    $this->comment->tags['@param'][$varnum]->ptr,
+                                    'phpdoc_fun_param_type_mismatch',
+                                    [$varnum + 1]
+                                );
+                            } elseif ($docparamdata->fixed) {
+                                $fix = $this->file->addFixableWarning(
+                                    "PHPDoc function parameter %s type doesn't conform to recommended style",
+                                    $this->comment->tags['@param'][$varnum]->ptr,
+                                    'phpdoc_fun_param_type_style',
+                                    [$varnum + 1]
+                                );
+                                if ($fix) {
+                                    $this->fixCommentTag(
+                                        $this->comment->tags['@param'][$varnum],
+                                        $docparamdata->fixed
+                                    );
+                                }
+                            }
+                            if ($paramdata->passsplat != $docparamdata->passsplat) {
+                                $this->file->addWarning(
+                                    'PHPDoc function parameter %s splat mismatch',
+                                    $this->comment->tags['@param'][$varnum]->ptr,
+                                    'phpdoc_fun_param_pass_splat_mismatch',
+                                    [$varnum + 1]
+                                );
+                            }
                         }
                     }
                 }
@@ -813,6 +885,18 @@ class PHPDocTypesSniff implements Sniff
                             $this->comment->tags['@return'][$retnum]->ptr,
                             'phpdoc_fun_ret_type_mismatch'
                         );
+                    } elseif ($docretdata->fixed) {
+                        $fix = $this->file->addFixableWarning(
+                            "PHPDoc function return type doesn't conform to recommended style",
+                            $this->comment->tags['@return'][$retnum]->ptr,
+                            'phpdoc_fun_ret_type_style'
+                        );
+                        if ($fix) {
+                            $this->fixCommentTag(
+                                $this->comment->tags['@return'][$retnum],
+                                $docretdata->fixed
+                            );
+                        }
                     }
                 }
             }
@@ -893,6 +977,19 @@ class PHPDocTypesSniff implements Sniff
                 $scope->templates[$templatedata->var] = 'never';
             } else {
                 $scope->templates[$templatedata->var] = $templatedata->type;
+                if ($templatedata->fixed) {
+                    $fix = $this->file->addFixableWarning(
+                        "PHPDoc tempate type doesn't conform to recommended style",
+                        $templatetag->ptr,
+                        'phpdoc_template_type_style'
+                    );
+                    if ($fix) {
+                        $this->fixCommentTag(
+                            $templatetag,
+                            $templatedata->fixed
+                        );
+                    }
+                }
             }
         }
     }
@@ -986,6 +1083,18 @@ class PHPDocTypesSniff implements Sniff
                             $this->comment->tags['@var'][$varnum]->ptr,
                             'phpdoc_var_type_mismatch'
                         );
+                    } elseif ($docvardata->fixed) {
+                        $fix = $this->file->addFixableWarning(
+                            "PHPDoc var type doesn't conform to recommended style",
+                            $this->comment->tags['@var'][$varnum]->ptr,
+                            'phpdoc_var_type_style'
+                        );
+                        if ($fix) {
+                            $this->fixCommentTag(
+                                $this->comment->tags['@var'][$varnum],
+                                $docvardata->fixed
+                            );
+                        }
                     }
                 }
             }
