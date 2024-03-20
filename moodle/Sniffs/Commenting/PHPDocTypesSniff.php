@@ -465,8 +465,10 @@ class PHPDocTypesSniff implements Sniff
             }
         } while (!in_array($this->tokens[$ptr]['code'], [T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_TAG]));
 
-        if (!($replacementcounter == count($replacementarray) - 1
-            && ($donereplacement || $replacementarray[count($replacementarray) - 1] === ""))) {
+        if (
+            !($replacementcounter == count($replacementarray) - 1
+            && ($donereplacement || $replacementarray[count($replacementarray) - 1] === ""))
+        ) {
             throw new \Exception();
         }
 

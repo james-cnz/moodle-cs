@@ -830,7 +830,9 @@ class PHPDocTypeParser
             || $nextchar == '"' || $nextchar == "'"
         ) {
             // String.
-            $this->correctToken($lowernext);
+            if ($nextchar != '"' && $nextchar != "'") {
+                $this->correctToken($lowernext);
+            }
             $strtype = strtolower($this->parseToken());
             if ($strtype == 'class-string' && $this->next == '<') {
                 $this->parseToken('<');
