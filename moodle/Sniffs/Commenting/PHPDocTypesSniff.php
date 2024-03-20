@@ -185,7 +185,7 @@ class PHPDocTypesSniff implements Sniff
                 } elseif ($scope->type == 'classish') {
                     $this->processClassTraitUse();
                 } else {
-                   throw new \Exception();
+                    throw new \Exception();
                 }
             } elseif (
                 in_array(
