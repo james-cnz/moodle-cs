@@ -743,13 +743,13 @@ class PHPDocTypesSniff implements Sniff
         // Checks.
         if ($this->pass == 2) {
             // Check for missing docs if not anonymous.
-            if ($name && !$this->comment) {
+            /*if ($name && !$this->comment) {
                 $this->file->addWarning(
                     'PHPDoc function is not documented',
                     $this->fileptr,
                     'phpdoc_fun_doc_missing'
                 );
-            }
+            }*/
 
             // Check and store templates.
             if ($this->comment && isset($this->comment->tags['@template'])) {
@@ -1041,21 +1041,21 @@ class PHPDocTypesSniff implements Sniff
 
             if (!$this->comment && $scope->type == 'classish') {
                 // Require comments for class variables and constants.
-                $this->file->addWarning(
+                /*$this->file->addWarning(
                     'PHPDoc variable or constant is not documented',
                     $this->fileptr,
                     'phpdoc_var_doc_missing'
-                );
+                );*/
             } elseif ($this->comment) {
                 if (!isset($this->comment->tags['@var'])) {
                     $this->comment->tags['@var'] = [];
                 }
                 // Missing or multiple vars.
-                if (count($this->comment->tags['@var']) < 1) {
+                /*if (count($this->comment->tags['@var']) < 1) {
                     $this->file->addError('PHPDoc missing @var tag', $this->comment->ptr, 'phpdoc_var_missing');
                 } elseif (count($this->comment->tags['@var']) > 1) {
                     $this->file->addError('PHPDoc multiple @var tags', $this->comment->tags['@var'][1]->ptr, 'phpdoc_var_multiple');
-                }
+                }*/
                 // Var type check and match.
                 $vardata = ($properties && $properties['type']) ?
                     $this->typeparser->parseTypeAndVar(
