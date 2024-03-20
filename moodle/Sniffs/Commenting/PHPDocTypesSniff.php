@@ -46,7 +46,7 @@ class PHPDocTypesSniff implements Sniff
      * classish things: classes, interfaces, traits, and enums */
     protected array $artifacts = [];
 
-    /** @var ?PHPDocTypeParser */
+    /** @var ?PHPDocTypeParser for parsing and comparing types */
     protected ?PHPDocTypeParser $typeparser = null;
 
     /** @var 1|2 pass 1 for gathering artifact/classish info, 2 for checking */
@@ -116,6 +116,7 @@ class PHPDocTypesSniff implements Sniff
             $this->fileptr = $stackptr;
             $this->processPass();
         } catch (\Exception $e) {
+            // Give up.  The user will probably want to fix parse errors before anything else.
             $this->file->addError(
                 'The PHPDoc type sniff failed to parse the file.  PHPDoc type checks were not performed.',
                 $this->fileptr < count($this->tokens) ? $this->fileptr : $this->fileptr - 1,
@@ -205,6 +206,7 @@ class PHPDocTypesSniff implements Sniff
                 // Fetch comment.
                 $this->comment = $this->commentpending;
                 $this->commentpending = null;
+                // Ignore preceding stuff, and gather info to check this is actually a declaration.
                 $static = false;
                 $staticprecededbynew = ($this->tokenprevious['code'] == T_NEW);
                 while (
@@ -216,8 +218,9 @@ class PHPDocTypesSniff implements Sniff
                     $static = ($this->token['code'] == T_STATIC);
                     $this->advance();
                 }
+                // What kind of declaration is this?
                 if ($static && ($this->token['code'] == T_DOUBLE_COLON || $staticprecededbynew)) {
-                    // Ignore static late binding.
+                    // It's not a declaration, it's a static late binding.  Ignore.
                 } elseif (in_array($this->token['code'], [T_CLASS,  T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
                     // Classish thing.
                     $this->processClassish($scope);
@@ -480,6 +483,7 @@ class PHPDocTypesSniff implements Sniff
             }
         } while (!in_array($this->tokens[$ptr]['code'], [T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_TAG]));
 
+        // Check we're done all the expected replacements, otherwise something's gone seriously wrong.
         if (
             !($replacementcounter == count($replacementarray) - 1
             && ($donereplacement || $replacementarray[count($replacementarray) - 1] === ""))
@@ -499,6 +503,8 @@ class PHPDocTypesSniff implements Sniff
      */
     protected function processNamespace(object $scope): void {
         $this->advance(T_NAMESPACE);
+
+        // Fetch the namespace.
         $namespace = '';
         while (
             in_array(
@@ -509,12 +515,18 @@ class PHPDocTypesSniff implements Sniff
             $namespace .= $this->token['content'];
             $this->advance();
         }
+
+        // Check it's right.
         if ($namespace != '' && $namespace[strlen($namespace) - 1] == "\\") {
             throw new \Exception();
         }
+
+        // Check it's fully qualified.
         if ($namespace != '' && $namespace[0] != "\\") {
             $namespace = "\\" . $namespace;
         }
+
+        // What kind of namespace is it?
         if (!in_array($this->token['code'], [T_OPEN_CURLY_BRACKET, T_SEMICOLON])) {
             throw new \Exception();
         }
@@ -538,9 +550,12 @@ class PHPDocTypesSniff implements Sniff
      */
     protected function processUse(object $scope): void {
         $this->advance(T_USE);
+
+        // Loop until we've fetched all imports.
         $more = false;
         do {
-            $namespace = '';
+
+            // Get the type.
             $type = 'class';
             if ($this->token['code'] == T_FUNCTION) {
                 $type = 'function';
@@ -549,6 +564,9 @@ class PHPDocTypesSniff implements Sniff
                 $type = 'const';
                 $this->advance(T_CONST);
             }
+
+            // Get what's being imported
+            $namespace = '';
             while (
                 in_array(
                     $this->token['code'],
@@ -558,18 +576,24 @@ class PHPDocTypesSniff implements Sniff
                 $namespace .= $this->token['content'];
                 $this->advance();
             }
+
+            // Check it's fully qualified.
             if ($namespace != '' && $namespace[0] != "\\") {
                 $namespace = "\\" . $namespace;
             }
+
             if ($this->token['code'] == T_OPEN_USE_GROUP) {
+                // It's a group.
                 $namespacestart = $namespace;
                 if ($namespacestart && strrpos($namespacestart, "\\") != strlen($namespacestart) - 1) {
                     throw new \Exception();
                 }
                 $typestart = $type;
+
+                // Fetch everything in the group.
                 $this->advance(T_OPEN_USE_GROUP);
                 do {
-                    $namespaceend = '';
+                    // Get the type.
                     $type = $typestart;
                     if ($this->token['code'] == T_FUNCTION) {
                         $type = 'function';
@@ -578,6 +602,9 @@ class PHPDocTypesSniff implements Sniff
                         $type = 'const';
                         $this->advance(T_CONST);
                     }
+
+                    // Get what's being imported.
+                    $namespaceend = '';
                     while (
                         in_array(
                             $this->token['code'],
@@ -588,12 +615,17 @@ class PHPDocTypesSniff implements Sniff
                         $this->advance();
                     }
                     $namespace = $namespacestart . $namespaceend;
+
+                    // Figure out the alias.
                     $alias = substr($namespace, strrpos($namespace, "\\") + 1);
                     $asalias = $this->processUseAsAlias();
                     $alias = $asalias ?? $alias;
+
+                    // Store it.
                     if ($this->pass == 2 && $type == 'class') {
                         $scope->uses[$alias] = $namespace;
                     }
+
                     $more = ($this->token['code'] == T_COMMA);
                     if ($more) {
                         $this->advance(T_COMMA);
@@ -601,6 +633,8 @@ class PHPDocTypesSniff implements Sniff
                 } while ($more);
                 $this->advance(T_CLOSE_USE_GROUP);
             } else {
+                // It's a single import.
+                // Figure out the alias.
                 $alias = (strrpos($namespace, "\\") !== false) ?
                     substr($namespace, strrpos($namespace, "\\") + 1)
                     : $namespace;
@@ -609,6 +643,8 @@ class PHPDocTypesSniff implements Sniff
                 }
                 $asalias = $this->processUseAsAlias();
                 $alias = $asalias ?? $alias;
+
+                // Store it.
                 if ($this->pass == 2 && $type == 'class') {
                     $scope->uses[$alias] = $namespace;
                 }
@@ -618,6 +654,7 @@ class PHPDocTypesSniff implements Sniff
                 $this->advance(T_COMMA);
             }
         } while ($more);
+
         $this->advance(T_SEMICOLON);
     }
 
@@ -681,11 +718,13 @@ class PHPDocTypesSniff implements Sniff
             }
             // Check properties.
             if ($this->comment) {
+                // Check each property type.
                 foreach (['@property', '@property-read', '@property-write'] as $tagname) {
                     if (!isset($this->comment->tags[$tagname])) {
                         $this->comment->tags[$tagname] = [];
                     }
 
+                    // Check each individual property.
                     for ($propnum = 0; $propnum < count($this->comment->tags[$tagname]); $propnum++) {
                         $docpropdata = $this->typeparser->parseTypeAndVar(
                             $scope,
@@ -728,11 +767,14 @@ class PHPDocTypesSniff implements Sniff
 
         $this->advance();
 
+        // If it's an anonymous class, it could have parameters.
+        // And those parameters could have other anonymous classes or functions in them.
         if ($parametersptr) {
             $this->advanceTo($parametersptr);
             $this->processParameters($scope);
         }
 
+        // Process the content.
         if ($blockptr) {
             $this->advanceTo($blockptr);
             $this->processBlock($scope);
@@ -740,7 +782,9 @@ class PHPDocTypesSniff implements Sniff
     }
 
     /**
-     * Process a class trait usage.
+     * Skip over a class trait usage.
+     * We need to ignore these, because if it's got public, protected, or private in it,
+     * it could be confused for a declaration.
      * @return void
      * @phpstan-impure
      */
@@ -824,6 +868,8 @@ class PHPDocTypesSniff implements Sniff
                         'phpdoc_fun_param_count'
                     );
                 }
+
+                // Check each individual parameter.
                 for ($varnum = 0; $varnum < count($this->comment->tags['@param']); $varnum++) {
                     $docparamdata = $this->typeparser->parseTypeAndVar(
                         $scope,
@@ -846,6 +892,7 @@ class PHPDocTypesSniff implements Sniff
                             [$varnum + 1]
                         );
                     } elseif ($varnum < count($parameters)) {
+                        // Compare docs against actual parameters.
                         $paramdata = $this->typeparser->parseTypeAndVar(
                             $scope,
                             $parameters[$varnum]['content'],
@@ -924,6 +971,8 @@ class PHPDocTypesSniff implements Sniff
                         true
                     )
                     : (object)['type' => 'mixed'];
+
+                // Check each individual return tag, in case there's more than one.
                 for ($retnum = 0; $retnum < count($this->comment->tags['@return']); $retnum++) {
                     $docretdata = $this->typeparser->parseTypeAndVar(
                         $scope,
@@ -965,7 +1014,7 @@ class PHPDocTypesSniff implements Sniff
 
         $this->advance();
 
-        // Parameters.
+        // Parameters could contain anonymous classes or functions.
         if ($parametersptr) {
             $this->advanceTo($parametersptr);
             $this->processParameters($scope);
@@ -1088,7 +1137,7 @@ class PHPDocTypesSniff implements Sniff
             throw new \Exception();
         }
 
-        // Checking.
+        // Type checking.
         if ($this->pass == 2) {
             // Get properties, unless it's a function static variable or constant.
             $properties = ($scope->type == 'classish' && !$const) ?
