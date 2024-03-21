@@ -170,7 +170,7 @@ class PHPDocTypesSniff implements Sniff
                     [T_NAMESPACE, T_USE,
                     T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
                     T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
-                    T_FUNCTION, T_CLOSURE,
+                    T_FUNCTION, T_CLOSURE, T_FN,
                     T_VAR, T_CONST,
                     null]
                 )
@@ -200,7 +200,7 @@ class PHPDocTypesSniff implements Sniff
                     $this->token['code'],
                     [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
                     T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
-                    T_FUNCTION, T_CLOSURE,
+                    T_FUNCTION, T_CLOSURE, T_FN,
                     T_CONST, T_VAR, ]
                 )
             ) {
@@ -226,7 +226,7 @@ class PHPDocTypesSniff implements Sniff
                 } elseif (in_array($this->token['code'], [T_CLASS,  T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
                     // Classish thing.
                     $this->processClassish($scope);
-                } elseif ($this->token['code'] == T_FUNCTION || $this->token['code'] == T_CLOSURE) {
+                } elseif (in_array($this->token['code'], [T_FUNCTION, T_CLOSURE, T_FN])) {
                     // Function.
                     $this->processFunction($scope);
                 } else {
@@ -244,9 +244,10 @@ class PHPDocTypesSniff implements Sniff
         if ($this->fileptr != $scope->closer) {
             throw new \Exception();
         }
-        if ($this->token['code']) {
+        // We can't consume this token.  Arrow functions close on the token following their body.
+        /*if ($this->token['code']) {
             $this->advance();
-        }
+        }*/
     }
 
     /**
@@ -837,7 +838,8 @@ class PHPDocTypesSniff implements Sniff
         $scope->closer = null;
 
         // Get details.
-        $name = $this->file->getDeclarationName($this->fileptr);
+        // Can't fetch name for arrow functions.  But we're not doing checks that need the name any more.
+        // $name = $this->file->getDeclarationName($this->fileptr);
         $parameters = $this->file->getMethodParameters($this->fileptr);
         $properties = $this->file->getMethodProperties($this->fileptr);
 
@@ -1044,7 +1046,7 @@ class PHPDocTypesSniff implements Sniff
         while (true) {
             // Skip irrelevant tokens.
             while (
-                !in_array($this->token['code'], [T_ANON_CLASS, T_CLOSURE])
+                !in_array($this->token['code'], [T_ANON_CLASS, T_CLOSURE, T_FN])
                 && $this->fileptr < $scope->closer
             ) {
                 $this->advance();
@@ -1056,7 +1058,7 @@ class PHPDocTypesSniff implements Sniff
             } elseif ($this->token['code'] == T_ANON_CLASS) {
                 // Classish thing.
                 $this->processClassish($scope);
-            } elseif ($this->token['code'] == T_CLOSURE) {
+            } elseif (in_array($this->token['code'], [T_CLOSURE, T_FN])) {
                 // Function.
                 $this->processFunction($scope);
             } else {
