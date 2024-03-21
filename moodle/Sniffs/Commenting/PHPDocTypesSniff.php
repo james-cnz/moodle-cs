@@ -29,6 +29,7 @@ namespace MoodleHQ\MoodleCS\moodle\Sniffs\Commenting;
 
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;
+use PHP_CodeSniffer\Util\Tokens;
 use MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser;
 
 /**
@@ -133,8 +134,10 @@ class PHPDocTypesSniff implements Sniff
      * @phpstan-impure
      */
     protected function processPass(): void {
-        $scope = (object)['namespace' => '', 'uses' => [], 'templates' => [], 'closer' => null,
-                            'classname' => null, 'parentname' => null, 'type' => 'root'];
+        $scope = (object)[
+            'namespace' => '', 'uses' => [], 'templates' => [], 'closer' => null,
+            'classname' => null, 'parentname' => null, 'type' => 'root'
+        ];
         $this->tokenprevious = ['code' => null, 'content' => ''];
         $this->fetchToken();
         $this->commentpending = null;
@@ -167,12 +170,14 @@ class PHPDocTypesSniff implements Sniff
             while (
                 !in_array(
                     $this->token['code'],
-                    [T_NAMESPACE, T_USE,
-                    T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
-                    T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
-                    T_FUNCTION, T_CLOSURE, T_FN,
-                    T_VAR, T_CONST,
-                    null]
+                    array_merge(
+                        [T_NAMESPACE, T_USE],
+                        Tokens::$methodPrefixes, [T_READONLY],
+                        Tokens::$ooScopeTokens,
+                        [T_FUNCTION, T_CLOSURE, T_FN,
+                        T_VAR, T_CONST,
+                        null]
+                    )
                 )
                 && !($this->fileptr >= $scope->closer)
             ) {
@@ -198,10 +203,12 @@ class PHPDocTypesSniff implements Sniff
             } elseif (
                 in_array(
                     $this->token['code'],
-                    [T_ABSTRACT, T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_READONLY, T_FINAL,
-                    T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM,
-                    T_FUNCTION, T_CLOSURE, T_FN,
-                    T_CONST, T_VAR, ]
+                    array_merge(
+                        Tokens::$methodPrefixes, [T_READONLY], 
+                        Tokens::$ooScopeTokens, 
+                        [T_FUNCTION, T_CLOSURE, T_FN,
+                        T_CONST, T_VAR, ]
+                    )
                 )
             ) {
                 // Declarations.
@@ -223,7 +230,7 @@ class PHPDocTypesSniff implements Sniff
                 // What kind of declaration is this?
                 if ($static && ($this->token['code'] == T_DOUBLE_COLON || $staticprecededbynew)) {
                     // It's not a declaration, it's a static late binding.  Ignore.
-                } elseif (in_array($this->token['code'], [T_CLASS,  T_ANON_CLASS, T_INTERFACE, T_TRAIT, T_ENUM])) {
+                } elseif (in_array($this->token['code'], Tokens::$ooScopeTokens)) {
                     // Classish thing.
                     $this->processClassish($scope);
                 } elseif (in_array($this->token['code'], [T_FUNCTION, T_CLOSURE, T_FN])) {
@@ -279,7 +286,10 @@ class PHPDocTypesSniff implements Sniff
         // Skip stuff that doesn't effect us.
         while (
             $nextptr < count($this->tokens)
-            && in_array($this->tokens[$nextptr]['code'], [T_WHITESPACE, T_COMMENT, T_INLINE_HTML, T_PHPCS_IGNORE])
+            && in_array(
+                $this->tokens[$nextptr]['code'],
+                array_merge([T_WHITESPACE, T_COMMENT], Tokens::$phpcsCommentTokens)
+            )
         ) {
             $nextptr++;
         }
@@ -345,8 +355,7 @@ class PHPDocTypesSniff implements Sniff
             !in_array(
                 $this->token['code'],
                 [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_STAR,
-                T_DOC_COMMENT_TAG, T_DOC_COMMENT_STRING, T_DOC_COMMENT_WHITESPACE,
-                T_PHPCS_IGNORE]
+                T_DOC_COMMENT_TAG, T_DOC_COMMENT_STRING, T_DOC_COMMENT_WHITESPACE]
             )
         ) {
             throw new \Exception();
