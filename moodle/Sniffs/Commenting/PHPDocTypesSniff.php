@@ -136,7 +136,7 @@ class PHPDocTypesSniff implements Sniff
     protected function processPass(): void {
         $scope = (object)[
             'namespace' => '', 'uses' => [], 'templates' => [], 'closer' => null,
-            'classname' => null, 'parentname' => null, 'type' => 'root'
+            'classname' => null, 'parentname' => null, 'type' => 'root',
         ];
         $this->tokenprevious = ['code' => null, 'content' => ''];
         $this->fetchToken();
@@ -172,7 +172,8 @@ class PHPDocTypesSniff implements Sniff
                     $this->token['code'],
                     array_merge(
                         [T_NAMESPACE, T_USE],
-                        Tokens::$methodPrefixes, [T_READONLY],
+                        Tokens::$methodPrefixes,
+                        [T_READONLY],
                         Tokens::$ooScopeTokens,
                         [T_FUNCTION, T_CLOSURE, T_FN,
                         T_VAR, T_CONST,
@@ -204,8 +205,9 @@ class PHPDocTypesSniff implements Sniff
                 in_array(
                     $this->token['code'],
                     array_merge(
-                        Tokens::$methodPrefixes, [T_READONLY], 
-                        Tokens::$ooScopeTokens, 
+                        Tokens::$methodPrefixes,
+                        [T_READONLY],
+                        Tokens::$ooScopeTokens,
                         [T_FUNCTION, T_CLOSURE, T_FN,
                         T_CONST, T_VAR, ]
                     )
