@@ -289,7 +289,7 @@ class PHPDocTypeParser
             }
             $variable = $this->parseToken();
             if (
-                !($this->next == null || $this->next == 'of'
+                !($this->next == null
                     || ctype_space(substr($this->text, $this->nexts[0]->startpos - 1, 1))
                     || in_array($this->next, [',', ';', ':', '.']))
             ) {
@@ -302,8 +302,8 @@ class PHPDocTypeParser
             $variable = null;
         }
 
-        if ($this->next == 'of') {
-            $this->parseToken('of');
+        if ($this->next == 'of' || $this->next == 'as') {
+            $this->parseToken();
             // Try to parse type.
             $savednexts = $this->nexts;
             try {
@@ -838,7 +838,7 @@ class PHPDocTypeParser
             $strtype = strtolower($this->parseToken());
             if ($strtype == 'class-string' && $this->next == '<') {
                 $this->parseToken('<');
-                $stringtype = $this->parseAnyType();
+                $stringtype = $this->parseBasicType();
                 if (!$this->compareTypes('object', $stringtype)) {
                     throw new \Exception("Error parsing type, class-string type isn't class.");
                 }

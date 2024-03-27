@@ -172,10 +172,9 @@ class types_valid extends types_valid_parent {
 
     /**
      * String types complex
-     * @param class-string<types_valid|types_valid_interface> $classstring2
      * @param '\'' $stringwithescape
      */
-    public function string_types_complex(string $classstring2, string $stringwithescape): void {
+    public function string_types_complex(string $stringwithescape): void {
     }
 
     /**
@@ -192,7 +191,7 @@ class types_valid extends types_valid_parent {
 
     /**
      * Array types complex
-     * @param array<array-key, string>|array<1|2, string>|array<types_valid::INT_*, string> $genarray3
+     * @param array<array-key, string> $genarray3
      */
     public function array_types_complex(array $genarray3): void {
     }
