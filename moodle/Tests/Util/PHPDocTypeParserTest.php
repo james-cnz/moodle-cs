@@ -66,15 +66,15 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                 'fixture' => 'phpdoctypes/phpdoctypes_all_types_right',
                 'errors' => [],
                 'warnings' => [
-                    128 => "PHPDoc function parameter 1 type doesn't conform to recommended style",
-                    136 => "PHPDoc function parameter 1 type doesn't conform to recommended style",
+                    128 => "PHPDoc function parameter type doesn't conform to recommended style",
+                    136 => "PHPDoc function parameter type doesn't conform to recommended style",
                 ],
             ],
             'PHPDocTypes parse wrong' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_parse_wrong',
                 'errors' => [
-                    43 => 'PHPDoc function parameter 1 name missing or malformed',
-                    50 => 'PHPDoc function parameter 1 name missing or malformed',
+                    43 => 'PHPDoc function parameter name missing or malformed',
+                    50 => 'PHPDoc function parameter name missing or malformed',
                     56 => 'PHPDoc var type missing or malformed',
                     59 => 'PHPDoc var type missing or malformed',
                     63 => 'PHPDoc var type missing or malformed',
@@ -94,7 +94,7 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                     108 => 'PHPDoc var type missing or malformed',
                     111 => 'PHPDoc var type missing or malformed',
                     114 => 'PHPDoc var type missing or malformed',
-                    119 => 'PHPDoc function parameter 1 type missing or malformed',
+                    119 => 'PHPDoc function parameter type missing or malformed',
                     125 => 'PHPDoc var type missing or malformed',
                     128 => 'PHPDoc var type missing or malformed',
                 ],

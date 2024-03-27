@@ -149,7 +149,7 @@ class PHPDocTypesSniff implements Sniff
                 throw new \Exception();
             }
             $scope->closer = count($this->tokens);
-        } else if ($type == 1) {
+        } elseif ($type == 1) {
             if ($this->token['scope_opener'] != $this->fileptr) {
                 throw new \Exception();
             }
@@ -333,7 +333,6 @@ class PHPDocTypesSniff implements Sniff
             $this->processPossVarComment(null, $this->commentpending);
             $this->commentpending = null;
         }
-
     }
 
     /**
@@ -343,7 +342,7 @@ class PHPDocTypesSniff implements Sniff
      * @phpstan-impure
      */
     protected function advanceTo(int $newptr): void {
-        while($this->fileptr < $newptr) {
+        while ($this->fileptr < $newptr) {
             $this->advance();
         }
         if ($this->fileptr != $newptr) {
@@ -719,7 +718,7 @@ class PHPDocTypesSniff implements Sniff
      *          classname: ?string, parentname: ?string, type: string, closer: ?int} $scope
      * @param ?(\stdClass&object{ptr: int,
      *          tags: array<string, object{ptr: int, content: string, cstartptr: ?int, cendptr: ?int}[]>}) $comment
-     * 
+     *
      * @return void
      * @phpstan-impure
      */
@@ -919,7 +918,6 @@ class PHPDocTypesSniff implements Sniff
 
             // Check parameter types.
             if ($comment) {
-
                 // Gather parameter data.
                 $paramparsedarray = [];
                 foreach ($parameters as $parameter) {
@@ -1214,7 +1212,7 @@ class PHPDocTypesSniff implements Sniff
                     $this->fileptr,
                     'phpdoc_var_doc_missing'
                 );
-            } else*/ 
+            } else*/
             if ($comment) {
                 // Check for misplaced tags.
                 $this->checkNo(
@@ -1321,5 +1319,4 @@ class PHPDocTypesSniff implements Sniff
             }
         }
     }
-
 }
