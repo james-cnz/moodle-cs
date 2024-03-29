@@ -26,8 +26,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * A collection of invalid types for testing
  *
@@ -41,6 +39,7 @@ class types_invalid {
     /**
      * Expecting variable name, saw end
      * @param int
+     * @return void
      */
     public function expecting_var_saw_end(int $x): void {
     }
@@ -48,6 +47,7 @@ class types_invalid {
     /**
      * Expecting variable name, saw other (passes Psalm)
      * @param int int
+     * @return void
      */
     public function expecting_var_saw_other(int $x): void {
     }
@@ -71,7 +71,7 @@ class types_invalid {
     /** @var "\*/
     public $stringhasescapewithnofollowingchar;
 
-    /** @var array-key&(int|string) Non-DNF type (passes PHPStan) */
+    /** @var types_invalid&(a|b) Non-DNF type (passes PHPStan) */
     public $nondnftype;
 
     /** @var int&string Invalid intersection */
@@ -117,6 +117,7 @@ class types_invalid {
     /**
      * Class name has trailing slash
      * @param types_invalid\ $x
+     * @return void
      */
     public function class_name_has_trailing_slash(object $x): void {
     }

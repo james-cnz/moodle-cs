@@ -29,9 +29,11 @@
 
 namespace MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures;
 
-defined('MOODLE_INTERNAL') || die();
+use stdClass as myStdClass, Exception;
+use MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\ {PHPDocTypesSniffTest};
 
-use stdClass as myStdClass;
+?>
+<?php
 
 /**
  * A parent class
@@ -45,6 +47,10 @@ class php_valid_parent {
 interface php_valid_interface {
 }
 
+/** A trait */
+trait php_valid_trait {
+}
+
 /**
  * A collection of valid types for testing
  *
@@ -52,11 +58,14 @@ interface php_valid_interface {
  * @copyright 2023 Otago Polytechnic
  * @author    James Calder
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @template  T of int
  */
 class php_valid extends php_valid_parent implements php_valid_interface {
+    use php_valid_trait;
+
     /**
      * Namespaces recognised
-     * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\php_valid $x
+     * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\php_valid<int> $x
      * @return void
      */
     function namespaces(php_valid $x): void {
@@ -72,7 +81,7 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Parents recognised
-     * @param php_valid $x
+     * @param php_valid<int> $x
      * @return void
      */
     function parents(php_valid_parent $x): void {
@@ -80,10 +89,35 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Interfaces recognised
-     * @param php_valid $x
+     * @param php_valid<int> $x
      * @return void
      */
     function interfaces(php_valid_interface $x): void {
+    }
+
+    /**
+     * Class templates recognised
+     * @param T $x
+     * @return void
+     */
+    function class_templates(int $x): void {
+    }
+
+    /**
+     * Function templates recognised
+     * @template T2 of int
+     * @param T2 $x
+     * @return void
+     */
+    function function_templates(int $x): void {
+    }
+
+    /**
+     * Visibility accepted
+     * @param int $x
+     * @return void
+     */
+    public function visibility(int $x): void {
     }
 
     /**
@@ -97,3 +131,6 @@ class php_valid extends php_valid_parent implements php_valid_interface {
     function multiline_comment(object $x): void {
     }
 }
+
+// Ignore things that don't concern us.
+$x = 0;

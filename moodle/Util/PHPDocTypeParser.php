@@ -418,7 +418,7 @@ class PHPDocTypeParser
             } else {
                 $supertypes = ['object'];
                 $supertypequeue = [$basetype];
-                $ignore = true;
+                $ignore = true;  // We don't want to include the class itself, just super types of it.
             }
             while ($supertype = array_shift($supertypequeue)) {
                 if (in_array($supertype, $supertypes)) {
