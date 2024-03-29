@@ -406,7 +406,6 @@ class PHPDocTypesSniff implements Sniff
                 $this->fetchToken();
             }
         }
-
     }
 
     /**
@@ -1072,7 +1071,7 @@ class PHPDocTypesSniff implements Sniff
                 // Check parameters are in the correct order.
                 reset($paramparsedarray);
                 reset($docparamsexist);
-                while(key($paramparsedarray) || key($docparamsexist)) {
+                while (key($paramparsedarray) || key($docparamsexist)) {
                     if (key($docparamsexist) == key($paramparsedarray)) {
                         next($paramparsedarray);
                         next($docparamsexist);
@@ -1087,7 +1086,6 @@ class PHPDocTypesSniff implements Sniff
                         break;
                     }
                 }
-
             }
 
             // Check return type.
@@ -1355,7 +1353,7 @@ class PHPDocTypesSniff implements Sniff
                             $docvar->ptr,
                             'phpdoc_var_type'
                         );
-                    }  elseif ($docvarparsed->fixed) {
+                    } elseif ($docvarparsed->fixed) {
                         $fix = $this->file->addFixableWarning(
                             "PHPDoc var type doesn't conform to recommended style",
                             $docvar->ptr,
