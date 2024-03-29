@@ -1006,12 +1006,12 @@ class PHPDocTypesSniff implements Sniff
                             'phpdoc_fun_param_name'
                         );
                     } elseif (!isset($paramparsedarray[$docparamparsed->var])) {
-                            // Function parameter doesn't exist.
-                            $this->file->addError(
-                                "PHPDoc function parameter doesn't exist",
-                                $docparam->ptr,
-                                'phpdoc_fun_param_name_wrong'
-                            );
+                        // Function parameter doesn't exist.
+                        $this->file->addError(
+                            "PHPDoc function parameter doesn't exist",
+                            $docparam->ptr,
+                            'phpdoc_fun_param_name_wrong'
+                        );
                     } else {
                         // Compare docs against actual parameter.
                         // Fetch actual parameter.
@@ -1055,8 +1055,8 @@ class PHPDocTypesSniff implements Sniff
                     }
                 }
 
-                // Check all parameters are documented.
-                if (CHECK_HAS_DOCS) {
+                // Check all parameters are documented (if all documented parameters were recognised).
+                if (CHECK_HAS_DOCS && count($docparamsexist) == count($comment->tags['@param'])) {
                     foreach ($paramparsedarray as $paramname => $paramparsed) {
                         if (!isset($docparamsexist[$paramname])) {
                             $this->file->addWarning(
