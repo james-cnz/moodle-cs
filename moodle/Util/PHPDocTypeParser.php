@@ -236,6 +236,8 @@ class PHPDocTypeParser
                     // Code smell check.
                     throw new \Exception("Warning parsing type, no space after variable name.");
                 }
+                // Implicit nullable
+                // TODO: This is deprecated in PHP 8.4, so this should be removed at some stage.
                 if ($getwhat >= 3) {
                     if (
                         $this->next == '='

@@ -63,22 +63,22 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
     public static function provider(): array {
         return [
             'PHPDocTypes general right' => [
-                'fixture' => 'phpdoctypes_general_right',
+                'fixture' => 'phpdoctypes/phpdoctypes_general_right',
                 'errors' => [],
                 'warnings' => [],
             ],
             'PHPDocTypes method union types right' => [
-                'fixture' => 'phpdoctypes_method_union_types_right',
+                'fixture' => 'phpdoctypes/phpdoctypes_method_union_types_right',
                 'errors' => [],
                 'warnings' => [],
             ],
             'PHPDocTypes tags general right' => [
-                'fixture' => 'phpdoctypes_tags_general_right',
+                'fixture' => 'phpdoctypes/phpdoctypes_tags_general_right',
                 'errors' => [],
                 'warnings' => [],
             ],
             'PHPDocTypes tags general wrong' => [
-                'fixture' => 'phpdoctypes_tags_general_wrong',
+                'fixture' => 'phpdoctypes/phpdoctypes_tags_general_wrong',
                 'errors' => [
                     41 => "PHPDoc function parameter type missing or malformed",
                     42 => "PHPDoc function parameter type missing or malformed",
