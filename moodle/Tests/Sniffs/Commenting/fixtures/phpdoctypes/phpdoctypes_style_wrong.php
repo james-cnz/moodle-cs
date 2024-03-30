@@ -15,10 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A collection of invalid types for testing
+ * A collection of types not in recommended style for testing
  *
- * Every type annotation should give an error either when checked with PHPStan or Psalm.
- * Having just invalid types in here means the number of errors should match the number of type annotations.
+ * These needn't give errors in PHPStan or Psalm.
+ * But the PHPDocTypesSniff should give warnings.
  *
  * @package   local_codechecker
  * @copyright 2024 Otago Polytechnic
@@ -27,7 +27,7 @@
  */
 
 /**
- * A collection of invalid types for testing
+ * A collection of types not in recommended style for testing
  *
  * @package   local_codechecker
  * @copyright 2024 Otago Polytechnic

@@ -17,7 +17,7 @@
 /**
  * A collection of invalid types for testing
  *
- * Every type annotation should give an error either when checked with PHPStan or Psalm.
+ * Most type annotations give an error either when checked with PHPStan or Psalm.
  * Having just invalid types in here means the number of errors should match the number of type annotations.
  *
  * @package   local_codechecker
