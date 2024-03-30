@@ -92,7 +92,6 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     79 => "PHPDoc function return type mismatch",
                     87 => "PHPDoc template name missing or malformed",
                     88 => "PHPDoc template type missing or malformed",
-                    97 => "PHPDoc multiple @var tags",
                     101 => "PHPDoc var type missing or malformed",
                     104 => "PHPDoc var type mismatch",
                     107 => "PHPDoc var type missing or malformed",
@@ -101,6 +100,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     31 => "PHPDoc misplaced tag",
                     46 => "PHPDoc function parameter order wrong",
                     54 => "PHPDoc function parameter splat mismatch",
+                    97 => "PHPDoc multiple @var tags",
                 ],
             ],
             'PHPDocTypes method union types right' => [

@@ -27,15 +27,15 @@ namespace trailing_backslash\;
 
 namespace @ // Malformed.
 
-use no_trailing_backslash {};
+use no_trailing_backslash {something};
 
 use trailing_backslash\;
 
-use x\ { // No bracket closer.
+use x\ { ; // No bracket closer.
 
-use x\ {} // No content.
+use x\ {}; // No content.
 
-use x as @ // Malformed as clause.
+use x as @; // Malformed as clause.
 
 use x @ // No terminator.
 

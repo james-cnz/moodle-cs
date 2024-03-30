@@ -99,14 +99,12 @@ class PHPDocTypesSniff implements Sniff
             $this->artifacts = [];
             $this->pass = 1;
             $this->typeparser = null;
-            $this->fileptr = $stackptr;
-            $this->processPass();
+            $this->processPass($stackptr);
 
             // Check the PHPDoc types.
             $this->pass = 2;
             $this->typeparser = new PHPDocTypeParser($this->artifacts);
-            $this->fileptr = $stackptr;
-            $this->processPass();
+            $this->processPass($stackptr);
         } catch (\Exception $e) {
             // We should only end up here in debug mode.
             $this->file->addError(
@@ -122,15 +120,17 @@ class PHPDocTypesSniff implements Sniff
 
     /**
      * A pass over the file.
+     * @param int $stackptr The position in the stack.
      * @return void
      * @phpstan-impure
      */
-    protected function processPass(): void {
+    protected function processPass(int $stackptr): void {
         $scope = (object)[
             'namespace' => '', 'uses' => [], 'templates' => [], 'closer' => null,
             'classname' => null, 'parentname' => null, 'type' => 'root',
         ];
         $this->tokenprevious = ['code' => null, 'content' => ''];
+        $this->fileptr = $stackptr;
         $this->fetchToken();
         $this->commentpending = null;
 
@@ -226,16 +226,33 @@ class PHPDocTypesSniff implements Sniff
                         )
                     )
                 ) {
-                    // Declarations.
+                    // Maybe declaration.
                     // Fetch comment.
                     $comment = $this->commentpending;
                     $this->commentpending = null;
-                    // Ignore preceding stuff, and gather info to check this is actually a declaration.
+                    // Ignore preceding attribute(s).
                     while ($this->token['code'] == T_ATTRIBUTE) {
                         while ($this->token['code'] != T_ATTRIBUTE_END) {
                             $this->advance();
                         }
                         $this->advance(T_ATTRIBUTE_END);
+                    }
+                    // Ignore other preceding stuff, and check this is actually a declaration.
+                    if (
+                        !in_array(
+                            $this->token['code'],
+                            array_merge(
+                                Tokens::$methodPrefixes,
+                                [T_READONLY],
+                                Tokens::$ooScopeTokens,
+                                [T_FUNCTION, T_CLOSURE, T_FN,
+                                T_CONST, T_VAR, ]
+                            )
+                        )
+                    ) {
+                        // It's not a declaration, possibly an enum case.
+                        $this->processPossVarComment($scope, $comment);
+                        continue;
                     }
                     $static = false;
                     $staticprecededbynew = ($this->tokenprevious['code'] == T_NEW);
@@ -250,8 +267,9 @@ class PHPDocTypesSniff implements Sniff
                     }
                     // What kind of declaration is this?
                     if ($static && ($this->token['code'] == T_DOUBLE_COLON || $staticprecededbynew)) {
-                        // It's not a declaration, it's a static late binding.  Ignore.
+                        // It's not a declaration, it's a static late binding.
                         $this->processPossVarComment($scope, $comment);
+                        continue;
                     } elseif (in_array($this->token['code'], Tokens::$ooScopeTokens)) {
                         // Classish thing.
                         $this->processClassish($scope, $comment);
@@ -263,7 +281,7 @@ class PHPDocTypesSniff implements Sniff
                         $this->processVariable($scope, $comment);
                     }
                 } else {
-                    // We got something unrecognised.  We shouldn't ever end up here.
+                    // We got something unrecognised.
                     $this->advance();
                     throw new \Exception("Unrecognised construct");
                 }
@@ -632,6 +650,7 @@ class PHPDocTypesSniff implements Sniff
                 $typestart = $type;
 
                 // Fetch everything in the group.
+                $maybemore = false;
                 $this->advance(T_OPEN_USE_GROUP);
                 do {
                     // Get the type.
@@ -659,6 +678,9 @@ class PHPDocTypesSniff implements Sniff
 
                     // Figure out the alias.
                     $alias = substr($namespace, strrpos($namespace, "\\") + 1);
+                    if ($alias == '') {
+                        throw new \Exception("Malformed use statement");
+                    }
                     $asalias = $this->processUseAsAlias();
                     $alias = $asalias ?? $alias;
 
@@ -667,11 +689,11 @@ class PHPDocTypesSniff implements Sniff
                         $scope->uses[$alias] = $namespace;
                     }
 
-                    $more = ($this->token['code'] == T_COMMA);
-                    if ($more) {
+                    $maybemore = ($this->token['code'] == T_COMMA);
+                    if ($maybemore) {
                         $this->advance(T_COMMA);
                     }
-                } while ($more);
+                } while ($maybemore && $this->token['code'] != T_CLOSE_USE_GROUP);
                 $this->advance(T_CLOSE_USE_GROUP);
             } else {
                 // It's a single import.
@@ -1252,7 +1274,7 @@ class PHPDocTypesSniff implements Sniff
                 if (CHECK_HAS_DOCS && count($comment->tags['@var']) < 1) {
                     $this->file->addWarning('PHPDoc variable missing @var tag', $comment->ptr, 'phpdoc_var_missing');
                 } elseif (count($comment->tags['@var']) > 1) {
-                    $this->file->addError('PHPDoc multiple @var tags', $comment->tags['@var'][1]->ptr, 'phpdoc_var_multiple');
+                    $this->file->addWarning('PHPDoc multiple @var tags', $comment->tags['@var'][1]->ptr, 'phpdoc_var_multiple');
                 }
                 // Var type check and match.
                 $varparsed = $this->typeparser->parseTypeAndVar(
