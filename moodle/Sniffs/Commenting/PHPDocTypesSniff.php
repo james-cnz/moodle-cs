@@ -232,7 +232,7 @@ class PHPDocTypesSniff implements Sniff
                     $this->commentpending = null;
                     // Ignore preceding stuff, and gather info to check this is actually a declaration.
                     while ($this->token['code'] == T_ATTRIBUTE) {
-                        while($this->token['code'] != T_ATTRIBUTE_END) {
+                        while ($this->token['code'] != T_ATTRIBUTE_END) {
                             $this->advance();
                         }
                         $this->advance(T_ATTRIBUTE_END);
