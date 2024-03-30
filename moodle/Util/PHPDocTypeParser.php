@@ -940,7 +940,7 @@ class PHPDocTypeParser
             $type = 'resource';
         } elseif (in_array($lowernext, ['never', 'never-return', 'never-returns', 'no-return'])) {
             // Never.
-            $this->correctToken($lowernext);
+            $this->correctToken('never');
             $this->parseToken();
             $type = 'never';
         } elseif ($lowernext == 'null') {

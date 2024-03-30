@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace MoodleHQ\MoodleCS\moodle\Sniffs\Commenting;
 
-define('DEBUG_MODE', true);
-define('CHECK_HAS_DOCS', true);
+define('DEBUG_MODE', false);
+define('CHECK_HAS_DOCS', false);
 
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;
@@ -185,7 +185,7 @@ class PHPDocTypesSniff implements Sniff
                         array_merge(
                             [T_NAMESPACE, T_USE],
                             Tokens::$methodPrefixes,
-                            [T_READONLY],
+                            [T_ATTRIBUTE, T_READONLY],
                             Tokens::$ooScopeTokens,
                             [T_FUNCTION, T_CLOSURE, T_FN,
                             T_VAR, T_CONST,
@@ -219,7 +219,7 @@ class PHPDocTypesSniff implements Sniff
                         $this->token['code'],
                         array_merge(
                             Tokens::$methodPrefixes,
-                            [T_READONLY],
+                            [T_ATTRIBUTE, T_READONLY],
                             Tokens::$ooScopeTokens,
                             [T_FUNCTION, T_CLOSURE, T_FN,
                             T_CONST, T_VAR, ]
@@ -231,6 +231,12 @@ class PHPDocTypesSniff implements Sniff
                     $comment = $this->commentpending;
                     $this->commentpending = null;
                     // Ignore preceding stuff, and gather info to check this is actually a declaration.
+                    while ($this->token['code'] == T_ATTRIBUTE) {
+                        while($this->token['code'] != T_ATTRIBUTE_END) {
+                            $this->advance();
+                        }
+                        $this->advance(T_ATTRIBUTE_END);
+                    }
                     $static = false;
                     $staticprecededbynew = ($this->tokenprevious['code'] == T_NEW);
                     while (
@@ -313,39 +319,23 @@ class PHPDocTypesSniff implements Sniff
         $this->fileptr++;
         $this->fetchToken();
 
-        // Skip stuff that doesn't affect us.
+        // Skip stuff that doesn't affect us, process PHPDoc comments.
         while (
             $this->fileptr < count($this->tokens)
             && in_array($this->tokens[$this->fileptr]['code'], Tokens::$emptyTokens)
-            && !in_array($this->tokens[$this->fileptr]['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT])
         ) {
-            $this->fileptr++;
-            $this->fetchToken();
-        }
-
-        // Process PHPDoc comments.
-        while (
-            $this->fileptr < count($this->tokens)
-            && in_array($this->tokens[$this->fileptr]['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT])
-        ) {
-            if ($this->pass == 2 && $this->commentpending) {
-                $this->processPossVarComment(null, $this->commentpending);
-                $this->commentpending = null;
-            }
-            $this->processComment();
-        }
-
-        // Allow attributes between the comment and what it relates to.
-        while (
-            $this->fileptr < count($this->tokens)
-            && in_array($this->tokens[$this->fileptr]['code'], [T_WHITESPACE, T_ATTRIBUTE])
-        ) {
-            if ($this->tokens[$this->fileptr]['code'] == T_ATTRIBUTE) {
-                $this->fileptr = $this->tokens[$this->fileptr]['attribute_closer'] + 1;
+            if (in_array($this->tokens[$this->fileptr]['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT])) {
+                // Dispose of unused comment.
+                if ($this->pass == 2 && $this->commentpending) {
+                    $this->processPossVarComment(null, $this->commentpending);
+                    $this->commentpending = null;
+                }
+                // Fetch new comment.
+                $this->processComment();
             } else {
                 $this->fileptr++;
+                $this->fetchToken();
             }
-            $this->fetchToken();
         }
 
         // If we're at the end of the file, dispose of unused comment.
@@ -382,7 +372,7 @@ class PHPDocTypesSniff implements Sniff
         if (
             !in_array(
                 $this->token['code'],
-                [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_STAR,
+                [T_DOC_COMMENT, T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT_CLOSE_TAG, T_DOC_COMMENT_STAR,
                 T_DOC_COMMENT_TAG, T_DOC_COMMENT_STRING, T_DOC_COMMENT_WHITESPACE]
             )
         ) {
@@ -396,18 +386,6 @@ class PHPDocTypesSniff implements Sniff
 
         $this->fileptr++;
         $this->fetchToken();
-
-        // If we're expecting the end of the comment, then we need to advance to the next PHP code.
-        if ($expectedcode == T_DOC_COMMENT_CLOSE_TAG) {
-            while (
-                $this->fileptr < count($this->tokens)
-                && in_array($this->tokens[$this->fileptr]['code'], Tokens::$emptyTokens)
-                && !in_array($this->tokens[$this->fileptr]['code'], [T_DOC_COMMENT_OPEN_TAG, T_DOC_COMMENT])
-            ) {
-                $this->fileptr++;
-                $this->fetchToken();
-            }
-        }
     }
 
     /**
@@ -1091,9 +1069,6 @@ class PHPDocTypesSniff implements Sniff
 
             // Check return type.
             if ($comment) {
-                if (!isset($comment->tags['@return'])) {
-                    $comment->tags['@return'] = [];
-                }
                 $retparsed = $properties['return_type'] ?
                     $this->typeparser->parseTypeAndVar(
                         $scope,
@@ -1102,10 +1077,13 @@ class PHPDocTypesSniff implements Sniff
                         true
                     )
                     : (object)['type' => 'mixed'];
+                if (!isset($comment->tags['@return'])) {
+                    $comment->tags['@return'] = [];
+                }
                 // The old checker didn't check this.
                 if (
                     CHECK_HAS_DOCS && count($comment->tags['@return']) < 1
-                    && $name != '__construct' && $retparsed != 'void'
+                    && $name != '__construct' && $retparsed->type != 'void'
                 ) {
                     $this->file->addWarning(
                         'PHPDoc missing function @return tag',

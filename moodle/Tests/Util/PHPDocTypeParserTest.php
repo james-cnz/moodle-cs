@@ -68,6 +68,7 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                 'warnings' => [
                     129 => "PHPDoc function parameter type doesn't conform to recommended style",
                     138 => "PHPDoc function parameter type doesn't conform to recommended style",
+                    233 => "PHPDoc function return type doesn't conform to recommended style",
                 ],
             ],
             'PHPDocTypes parse wrong' => [
