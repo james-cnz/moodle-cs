@@ -24,7 +24,7 @@
  * @package   local_codechecker
  * @copyright 2024 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 
 namespace MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures;
@@ -57,7 +57,7 @@ trait php_valid_trait {
  * @package   local_codechecker
  * @copyright 2023 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  * @template  T of int
  */
 class php_valid extends php_valid_parent implements php_valid_interface {

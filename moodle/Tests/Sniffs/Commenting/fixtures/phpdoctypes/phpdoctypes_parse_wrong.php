@@ -20,7 +20,7 @@
  * @package   local_codechecker
  * @copyright 2024 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 
 namespace trailing_backslash\;
@@ -58,7 +58,7 @@ function wrong_places(): void {
  * @package   local_codechecker
  * @copyright 2024 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 class types_invalid // No block
 

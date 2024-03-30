@@ -20,7 +20,7 @@
  *
  * @copyright  2024 Otago Polytechnic
  * @author     James Calder
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 
 declare(strict_types=1);
@@ -1328,6 +1328,11 @@ class PHPDocTypesSniff implements Sniff
 
     /**
      * Process a possible variable comment.
+     *
+     * Variable comments can be used for variables defined in a variety of ways.
+     * If we find a PHPDoc var comment that's not attached to something we're looking for,
+     * we'll just check the type is well formed, and assume it's otherwise OK.
+     *
      * @param \stdClass&object{namespace: string, uses: string[], templates: string[],
      *          classname: ?string, parentname: ?string, type: string, closer: ?int} $scope
      * @param ?(\stdClass&object{ptr: int,

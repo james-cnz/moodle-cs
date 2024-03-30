@@ -24,7 +24,7 @@
  * @package   local_codechecker
  * @copyright 2023 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 
 use stdClass as MyStdClass;
@@ -47,7 +47,7 @@ interface types_valid_interface {
  * @package   local_codechecker
  * @copyright 2023 Otago Polytechnic
  * @author    James Calder
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 class types_valid extends types_valid_parent implements types_valid_interface {
 

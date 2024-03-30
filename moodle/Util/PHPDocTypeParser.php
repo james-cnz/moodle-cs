@@ -23,7 +23,7 @@
  *
  * @copyright   2023-2024 Otago Polytechnic
  * @author      James Calder
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (or CC BY-SA v4 or later)
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
  */
 
 declare(strict_types=1);
