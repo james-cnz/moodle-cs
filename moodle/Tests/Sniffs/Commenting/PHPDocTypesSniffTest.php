@@ -62,7 +62,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
      */
     public static function provider(): array {
         return [
-            'PHPDocTypes docs missing wrong' => [
+            /*'PHPDocTypes docs missing wrong' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_docs_missing_wrong',
                 'errors' => [],
                 'warnings' => [
@@ -71,7 +71,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     52 => "PHPDoc variable or constant is not documented",
                     54 => "PHPDoc variable missing @var tag",
                 ],
-            ],
+            ],*/
             'PHPDocTypes general right' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_general_right',
                 'errors' => [],

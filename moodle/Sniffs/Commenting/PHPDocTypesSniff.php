@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace MoodleHQ\MoodleCS\moodle\Sniffs\Commenting;
 
 define('DEBUG_MODE', false);
-define('CHECK_HAS_DOCS', true);
+define('CHECK_HAS_DOCS', false);
 
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;
