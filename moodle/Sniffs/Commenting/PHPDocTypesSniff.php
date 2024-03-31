@@ -1292,11 +1292,9 @@ class PHPDocTypesSniff implements Sniff
                     $comment->tags['@var'] = [];
                 }
 
-                // Missing or multiple vars.
+                // Missing var tag.
                 if (CHECK_HAS_DOCS && count($comment->tags['@var']) < 1) {
                     $this->file->addWarning('PHPDoc variable missing @var tag', $comment->ptr, 'phpdoc_var_missing');
-                } elseif (count($comment->tags['@var']) > 1) {
-                    $this->file->addWarning('PHPDoc multiple @var tags', $comment->tags['@var'][1]->ptr, 'phpdoc_var_multiple');
                 }
 
                 // Var type check and match.

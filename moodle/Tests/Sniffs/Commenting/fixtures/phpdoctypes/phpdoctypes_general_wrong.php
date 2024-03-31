@@ -91,13 +91,6 @@ class types_invalid {
     function template_issues(): void {
     }
 
-    /**
-     * PHPDoc multiple @var tags
-     * @var int
-     * @var int
-     */
-    public int $multiple_var_tags;
-
     /** @var @ PHPDoc var type missing or malformed */
     public int $var_type_malformed;
  
