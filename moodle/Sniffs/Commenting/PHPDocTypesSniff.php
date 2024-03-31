@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace MoodleHQ\MoodleCS\moodle\Sniffs\Commenting;
 
 define('DEBUG_MODE', false);
-define('CHECK_HAS_DOCS', false);
+define('CHECK_HAS_DOCS', true);
 
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;
@@ -942,7 +942,10 @@ class PHPDocTypesSniff implements Sniff
         // Checks.
         if ($this->pass == 2) {
             // Check for missing docs if not anonymous.
-            if (CHECK_HAS_DOCS && $name && !$comment) {
+            if (
+                CHECK_HAS_DOCS && $name && !$comment
+                && (count($parameters) > 0 || strtolower(trim($properties['return_type'])) != 'void')
+            ) {
                 $this->file->addWarning(
                     'PHPDoc function is not documented',
                     $ptr,

@@ -37,7 +37,7 @@
 class types_invalid {
 
     // PHPDoc function is not documented
-    public function fun_not_doc(): void {
+    public function fun_not_doc(int $p): void {
     }
 
     /**
