@@ -49,15 +49,16 @@ class types_invalid {
     /** @var Integer PHPDoc var type doesn't conform to recommended style */
     public int $v1;
 
-    /** @var Integer PHPDoc var type doesn't conform to recommended style (unattached) */
-
     /** @var Integer
      *      | Boolean Multiline type, no line break at end */
-    public int|bool $v3;
+    public int|bool $v2;
 
     /** @var Integer
      *      | Boolean Multiline type, line break at end
      */
-    public int|bool $v4;
+    public int|bool $v3;
 
 }
+
+/** @var Integer PHPDoc var type doesn't conform to recommended style (not class var) */
+$v4 = 0;

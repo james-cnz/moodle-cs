@@ -103,7 +103,8 @@ class types_invalid {
  
     /** @var string PHPDoc var type mismatch */
     public int $var_type_mismatch;
- 
-    /** @var @ PHPDoc var type missing or malformed (unattached) */
 
 }
+
+/** @var @ PHPDoc var type missing or malformed (not class var) */
+$var_type_malformed_2 = 0;

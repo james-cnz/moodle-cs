@@ -94,7 +94,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     88 => "PHPDoc template type missing or malformed",
                     101 => "PHPDoc var type missing or malformed",
                     104 => "PHPDoc var type mismatch",
-                    107 => "PHPDoc var type missing or malformed",
+                    109 => "PHPDoc var type missing or malformed",
                 ],
                 'warnings' => [
                     31 => "PHPDoc misplaced tag",
@@ -130,8 +130,8 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     43 => "PHPDoc tempate type doesn't conform to recommended style",
                     49 => "PHPDoc var type doesn't conform to recommended style",
                     52 => "PHPDoc var type doesn't conform to recommended style",
-                    54 => "PHPDoc var type doesn't conform to recommended style",
-                    58 => "PHPDoc var type doesn't conform to recommended style",
+                    56 => "PHPDoc var type doesn't conform to recommended style",
+                    63 => "PHPDoc var type doesn't conform to recommended style",
                 ],
             ],
             'PHPDocTypes tags general right' => [
