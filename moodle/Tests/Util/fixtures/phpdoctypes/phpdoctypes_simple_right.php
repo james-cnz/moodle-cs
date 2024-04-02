@@ -200,6 +200,13 @@ class types_valid extends types_valid_parent implements types_valid_interface {
     }
 
     /**
+     * DocType DNF vs Native DNF
+     * @param int|(types_valid_parent&types_valid_interface) $p
+     */
+    function dnf_vs_dnf((types_valid_interface&types_valid_parent)|int $p): void {
+    }
+
+    /**
      * Inheritance
      * @param types_valid $basic
      * @param self|static|$this $relative1
