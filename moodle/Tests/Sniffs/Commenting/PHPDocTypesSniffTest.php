@@ -74,7 +74,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     57 => "PHPDoc var type doesn't conform to PHP-FIG PHPDoc",
                 ],
             ],
-            /*'PHPDocTypes docs missing warn' => [
+            'PHPDocTypes docs missing warn' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_docs_missing_warn',
                 'errors' => [],
                 'warnings' => [
@@ -83,7 +83,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     52 => "PHPDoc variable or constant is not documented",
                     54 => "PHPDoc variable missing @var tag",
                 ],
-            ],*/
+            ],
             'PHPDocTypes general right' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_general_right',
                 'errors' => [],
