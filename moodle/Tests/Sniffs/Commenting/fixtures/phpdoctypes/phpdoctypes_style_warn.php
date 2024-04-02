@@ -38,11 +38,11 @@
 class types_invalid {
 
     /**
-     * @param Integer $p PHPDoc function parameter type doesn't conform to recommended style
+     * @param Boolean|T $p PHPDoc function parameter type doesn't conform to recommended style
      * @return Integer PHPDoc function return type doesn't conform to recommended style
      * @template T of Integer PHPDoc tempate type doesn't conform to recommended style
      */
-    public function fun_wrong(int $p): int {
+    public function fun_wrong($p): int {
         return 0;
     }
 

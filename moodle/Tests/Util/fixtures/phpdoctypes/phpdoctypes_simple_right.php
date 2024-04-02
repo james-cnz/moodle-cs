@@ -17,7 +17,7 @@
 /**
  * A collection of valid types for testing
  *
- * This file should have no errors when checked with either PHPStan or Psalm.
+ * This file should have no errors when checked with either PHPStan or Psalm, other than no value for iterable.
  * Having just valid code in here means it can be easily checked with other checkers,
  * to verify we are actually checking against correct examples.
  *

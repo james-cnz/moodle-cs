@@ -58,7 +58,6 @@ trait php_valid_trait {
  * @copyright 2023 Otago Polytechnic
  * @author    James Calder
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later, CC BY-SA v4 or later, and BSD-3-Clause
- * @template  T of int
  */
 class php_valid extends php_valid_parent implements php_valid_interface {
     use php_valid_trait;
@@ -96,14 +95,6 @@ class php_valid extends php_valid_parent implements php_valid_interface {
     }
 
     /**
-     * Class templates recognised
-     * @param T $x
-     * @return void
-     */
-    function class_templates(int $x): void {
-    }
-
-    /**
      * Function templates recognised
      * @template T2 of int
      * @param T2 $x
@@ -120,14 +111,25 @@ class php_valid extends php_valid_parent implements php_valid_interface {
     public function visibility(int $x): void {
     }
 
+    /** @var int
+     *      | bool Multiline type */
+    public int|bool $v2;
+
+}
+
+/**
+ * @template T of int
+ */
+class php_valid_2 {
+
     /**
-     * Multiline comment
-     * @param php_valid_parent
-     *          |php_valid_interface $x
+     * Class templates recognised
+     * @param T $x
      * @return void
      */
-    function multiline_comment(object $x): void {
+    function class_templates(int $x): void {
     }
+
 }
 
 // Ignore things that don't concern us.
