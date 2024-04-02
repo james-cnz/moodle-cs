@@ -65,7 +65,7 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Namespaces recognised
-     * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\php_valid<int> $x
+     * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\php_valid $x
      * @return void
      */
     function namespaces(php_valid $x): void {
@@ -81,7 +81,7 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Parents recognised
-     * @param php_valid<int> $x
+     * @param php_valid $x
      * @return void
      */
     function parents(php_valid_parent $x): void {
@@ -89,7 +89,7 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Interfaces recognised
-     * @param php_valid<int> $x
+     * @param php_valid $x
      * @return void
      */
     function interfaces(php_valid_interface $x): void {
@@ -122,10 +122,8 @@ class php_valid extends php_valid_parent implements php_valid_interface {
 
     /**
      * Multiline comment
-     * @param object{
-     *   a: int,
-     *   b: string
-     * } $x
+     * @param php_valid_parent
+     *          |php_valid_interface $x
      * @return void
      */
     function multiline_comment(object $x): void {

@@ -62,8 +62,8 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
      */
     public static function provider(): array {
         return [
-            'PHPDocTypes complex right' => [
-                'fixture' => 'phpdoctypes/phpdoctypes_complex_right',
+            'PHPDocTypes complex warn' => [
+                'fixture' => 'phpdoctypes/phpdoctypes_complex_warn',
                 'errors' => [],
                 'warnings' => [
                     54 => "PHPDoc var type doesn't conform to PHP-FIG PHPDoc",
@@ -116,7 +116,7 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                     296 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     304 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     305 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
-                    314 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
+                    314 => "PHPDoc function return type doesn't conform to PHP-FIG PHPDoc",
                     322 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     323 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     331 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
