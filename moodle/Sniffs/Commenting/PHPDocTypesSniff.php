@@ -38,7 +38,7 @@ use MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser;
 class PHPDocTypesSniff implements Sniff
 {
     public const DEBUG_MODE = false;
-    public const CHECK_HAS_DOCS = true;
+    public const CHECK_HAS_DOCS = false;
     public const CHECK_NOT_COMPLEX = true;
 
     /** @var ?File the current file */
