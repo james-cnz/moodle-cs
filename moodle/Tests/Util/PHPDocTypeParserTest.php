@@ -118,7 +118,7 @@ class PHPDocTypeParserTest extends MoodleCSBaseTestCase
                     305 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     314 => "PHPDoc function return type doesn't conform to PHP-FIG PHPDoc",
                     322 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
-                    323 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
+                    323 => "PHPDoc function return type doesn't conform to PHP-FIG PHPDoc",
                     331 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     332 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                     340 => "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
