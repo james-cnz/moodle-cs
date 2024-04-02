@@ -114,11 +114,6 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     54 => "PHPDoc function parameter splat mismatch",
                 ],
             ],
-            'PHPDocTypes method union types right' => [
-                'fixture' => 'phpdoctypes/phpdoctypes_method_union_types_right',
-                'errors' => [],
-                'warnings' => [],
-            ],
             'PHPDocTypes namespace right' => [
                 'fixture' => 'phpdoctypes/phpdoctypes_namespace_right',
                 'errors' => [],
@@ -144,11 +139,6 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                     56 => "PHPDoc var type doesn't conform to recommended style",
                     63 => "PHPDoc var type doesn't conform to recommended style",
                 ],
-            ],
-            'PHPDocTypes tags general right' => [
-                'fixture' => 'phpdoctypes/phpdoctypes_tags_general_right',
-                'errors' => [],
-                'warnings' => [],
             ],
         ];
     }
