@@ -35,7 +35,7 @@ namespace MoodleHQ\MoodleCS\moodle\Util;
  */
 class PHPDocTypeParser
 {
-    /** @var array<non-empty-string, non-empty-string[]> predefined and SPL classes */
+    /** @var array<string, string[]> predefined and SPL classes */
     protected array $library = [
         // Predefined general.
         "\\ArrayAccess" => [],
@@ -132,7 +132,7 @@ class PHPDocTypeParser
         "\\SplSubject" => [],
     ];
 
-    /** @var array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> inheritance heirarchy */
+    /** @var array<string, object{extends: ?string, implements: string[]}> inheritance heirarchy */
     protected array $artifacts;
 
     /** @var object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} */
@@ -141,7 +141,7 @@ class PHPDocTypeParser
     /** @var string the text to be parsed */
     protected string $text = '';
 
-    /** @var array<object{pos: int, len: non-negative-int, replacement: non-empty-string}> */
+    /** @var array<object{pos: non-negative-int, len: non-negative-int, replacement: string}> */
     protected array $replacements = [];
 
     /** @var bool when we encounter an unknown type, should we go wide or narrow */
@@ -150,15 +150,15 @@ class PHPDocTypeParser
     /** @var bool whether the type complies with the PHP-FIG PHPDoc standard */
     protected bool $phpfig = true;
 
-    /** @var object{startpos: non-negative-int, endpos: non-negative-int, text: ?non-empty-string}[] next tokens */
+    /** @var object{startpos: non-negative-int, endpos: non-negative-int, text: ?string}[] next tokens */
     protected array $nexts = [];
 
-    /** @var ?non-empty-string the next token */
+    /** @var ?string the next token */
     protected ?string $next = null;
 
     /**
      * Constructor
-     * @param ?array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}> $artifacts
+     * @param ?array<string, object{extends: ?string, implements: string[]}> $artifacts
      */
     public function __construct(?array $artifacts = null) {
         $this->artifacts = $artifacts ?? [];
@@ -170,7 +170,7 @@ class PHPDocTypeParser
      * @param string $text the text to parse
      * @param 0|1|2|3 $getwhat what to get 0=type only 1=also name 2=also modifiers (& ...) 3=also default
      * @param bool $gowide if we can't determine the type, should we assume wide (for native type) or narrow (for PHPDoc)?
-     * @return object{type: ?non-empty-string, passsplat: string, name: ?non-empty-string,
+     * @return object{type: ?string, passsplat: string, name: ?string,
      *              rem: string, fixed: ?string, phpfig: bool}
      *          the simplified type, pass by reference & splat, variable name, remaining text, fixed text, and whether PHP-FIG
      */
@@ -265,7 +265,7 @@ class PHPDocTypeParser
      * Parse a template
      * @param ?object{namespace: string, uses: string[], templates: string[], classname: ?string, parentname: ?string} $scope
      * @param string $text the text to parse
-     * @return object{type: ?non-empty-string, name: ?non-empty-string, rem: string, fixed: ?string, phpfig: bool}
+     * @return object{type: ?string, name: ?string, rem: string, fixed: ?string, phpfig: bool}
      *          the simplified type, template name, remaining text, fixed text, and whether PHP-FIG
      */
     public function parseTemplate(?object $scope, string $text): object {
@@ -335,8 +335,8 @@ class PHPDocTypeParser
 
     /**
      * Compare types
-     * @param ?non-empty-string $widetype the type that should be wider, e.g. PHP type
-     * @param ?non-empty-string $narrowtype the type that should be narrower, e.g. PHPDoc type
+     * @param ?string $widetype the type that should be wider, e.g. PHP type
+     * @param ?string $narrowtype the type that should be narrower, e.g. PHPDoc type
      * @return bool whether $narrowtype has the same or narrower scope as $widetype
      */
     public function compareTypes(?string $widetype, ?string $narrowtype): bool {
@@ -393,8 +393,8 @@ class PHPDocTypeParser
 
     /**
      * Get super types
-     * @param non-empty-string $basetype
-     * @return non-empty-string[] super types
+     * @param string $basetype
+     * @return string[] super types
      */
     protected function superTypes(string $basetype): array {
         if (in_array($basetype, ['int', 'string'])) {
@@ -455,7 +455,7 @@ class PHPDocTypeParser
     /**
      * Prefetch next token
      * @param non-negative-int $lookahead
-     * @return ?non-empty-string
+     * @return ?string
      * @phpstan-impure
      */
     protected function next(int $lookahead = 0): ?string {
@@ -548,8 +548,8 @@ class PHPDocTypeParser
 
     /**
      * Fetch the next token
-     * @param ?non-empty-string $expect the expected text, or null for any
-     * @return non-empty-string
+     * @param ?string $expect the expected text, or null for any
+     * @return string
      * @phpstan-impure
      */
     protected function parseToken(?string $expect = null): string {
@@ -574,7 +574,7 @@ class PHPDocTypeParser
 
     /**
      * Correct the next token
-     * @param non-empty-string $correct the corrected text
+     * @param string $correct the corrected text
      * @return void
      * @phpstan-impure
      */
@@ -604,7 +604,7 @@ class PHPDocTypeParser
     /**
      * Parse a list of types seperated by | and/or &, single nullable type, or conditional return type
      * @param bool $inbrackets are we immediately inside brackets?
-     * @return non-empty-string the simplified type
+     * @return string the simplified type
      * @phpstan-impure
      */
     protected function parseAnyType(bool $inbrackets = false): string {
@@ -732,7 +732,7 @@ class PHPDocTypeParser
 
     /**
      * Parse a single type, possibly array type
-     * @return non-empty-string the simplified type
+     * @return string the simplified type
      * @phpstan-impure
      */
     protected function parseSingleType(): string {
@@ -754,7 +754,7 @@ class PHPDocTypeParser
 
     /**
      * Parse a basic type
-     * @return non-empty-string the simplified type
+     * @return string the simplified type
      * @phpstan-impure
      */
     protected function parseBasicType(): string {

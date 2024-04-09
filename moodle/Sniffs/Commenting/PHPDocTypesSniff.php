@@ -73,7 +73,7 @@ class PHPDocTypesSniff implements Sniff
      *  }[] file tokens */
     protected array $tokens = [];
 
-    /** @var array<non-empty-string, object{extends: ?non-empty-string, implements: non-empty-string[]}>
+    /** @var array<string, object{extends: ?string, implements: string[]}>
      * classish things: classes, interfaces, traits, and enums */
     protected array $artifacts = [];
 
@@ -175,8 +175,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process the content of a file, class, function, or parameters
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @param 0|1|2 $type 0=file 1=block 2=parameters
      * @return void
@@ -584,8 +584,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a namespace declaration.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @return void
      * @phpstan-impure
@@ -634,8 +634,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a use declaration.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @return void
      * @phpstan-impure
@@ -771,8 +771,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a classish thing.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -797,7 +797,6 @@ class PHPDocTypesSniff implements Sniff
         // Get details.
         $name = $this->file->getDeclarationName($ptr);
         $name = $name ? $scope->namespace . "\\" . $name : null;
-        /** @var non-empty-string|false $parent */
         $parent = $this->file->findExtendedClassName($ptr);
         if ($parent === false) {
             $parent = null;
@@ -808,7 +807,7 @@ class PHPDocTypesSniff implements Sniff
                 $parent = $scope->namespace . "\\" . $parent;
             }
         }
-        /** @var array<non-empty-string>|false $interfaces */
+        /** @var array<string>|false $interfaces */
         $interfaces = $this->file->findImplementedInterfaceNames($ptr);
         if (!is_array($interfaces)) {
             $interfaces = [];
@@ -953,8 +952,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a function.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -1263,8 +1262,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process templates.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -1322,8 +1321,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a variable.
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -1475,8 +1474,8 @@ class PHPDocTypesSniff implements Sniff
      * we'll just check the type is well formed, and assume it's otherwise OK.
      *
      * @param \stdClass&object{
-     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
-     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
+     *      namespace: string, uses: array<string, string>, templates: array<string, string>,
+     *      classname: ?string, parentname: ?string, type: string, closer: ?int
      * } $scope  We don't actually need the scope, because we're not doing a type comparison.
      * @param ?(
      *      \stdClass&object{

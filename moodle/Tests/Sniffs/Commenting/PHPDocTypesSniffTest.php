@@ -111,7 +111,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                 'warnings' => [
                     31 => "PHPDoc misplaced tag",
                     46 => "PHPDoc function parameter order wrong",
-                    54 => "PHPDoc function parameter splat mismatch",
+                    54 => "PHPDoc function parameter pass by reference or splat mismatch",
                 ],
             ],
             'PHPDocTypes namespace right' => [
