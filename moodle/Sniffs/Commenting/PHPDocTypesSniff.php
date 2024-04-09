@@ -37,16 +37,39 @@ use MoodleHQ\MoodleCS\moodle\Util\PHPDocTypeParser;
  */
 class PHPDocTypesSniff implements Sniff
 {
+    /** @var bool throw an error and stop if we can't parse the file */
     public const DEBUG_MODE = false;
-    public const CHECK_HAS_DOCS = false;
-    public const CHECK_NOT_COMPLEX = true;
+
+    /** @var bool check named functions (except void ones with no params), and class variables and constants are documented
+     *              unless using this sniff standalone to just check types, probably disable this and use other sniffs */
+    public const CHECK_HAS_DOC_BLOCKS = false;
+
+    /** @var bool check doc blocks, if present, contain appropriate param, return, or var tags */
+    public const CHECK_HAS_TAGS = false;
+
+    /** @var bool check there are no misplaced type tags--doesn't check for misplaced var tags */
+    public const CHECK_NO_MISPLACED = true;
+
+    /** @var bool check the types match--isn't aware of class heirarchies from other files */
+    public const CHECK_TYPE_MATCH = true;
+
+    /** @var bool check built-in types are lower case, and short forms are used */
+    public const CHECK_STYLE = true;
+
+    /** @var bool check the types used conform to the PHP-FIG PHPDoc standard */
+    public const CHECK_PHP_FIG = true;
+
+    /** @var bool check pass by reference and splat usage matches for param tags */
+    public const CHECK_PASS_SPLAT = true;
 
     /** @var ?File the current file */
     protected ?File $file = null;
 
     /** @var array{
      *      'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
-     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int
+     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int,
+     *      'bracket_opener'?: int, 'bracket_closer'?: int,
+     *      'comment_tags'?: array<int>, 'comment_closer'?: int
      *  }[] file tokens */
     protected array $tokens = [];
 
@@ -73,13 +96,17 @@ class PHPDocTypesSniff implements Sniff
 
     /** @var array{
      *      'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
-     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int
+     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int,
+     *      'bracket_opener'?: int, 'bracket_closer'?: int,
+     *      'comment_tags'?: array<int>, 'comment_closer'?: int
      *  } the current token */
     protected array $token = ['code' => null, 'content' => ''];
 
     /** @var array{
      *      'code': ?array-key, 'content': string, 'scope_opener'?: int, 'scope_closer'?: int,
-     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int
+     *      'parenthesis_opener'?: int, 'parenthesis_closer'?: int, 'attribute_closer'?: int,
+     *      'bracket_opener'?: int, 'bracket_closer'?: int,
+     *      'comment_tags'?: array<int>, 'comment_closer'?: int
      *  } the previous token */
     protected array $tokenprevious = ['code' => null, 'content' => ''];
 
@@ -148,8 +175,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process the content of a file, class, function, or parameters
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @param 0|1|2 $type 0=file 1=block 2=parameters
      * @return void
@@ -399,10 +426,15 @@ class PHPDocTypesSniff implements Sniff
         $commentptr = $this->fileptr;
         $this->commentpending = (object)['ptr' => $commentptr, 'tags' => []];
 
+        if (!isset($this->tokens[$commentptr]['comment_tags'])) {
+            throw new \Exception("Comment tags not found");
+        }
+
         // For each tag.
         foreach ($this->tokens[$commentptr]['comment_tags'] as $tagptr) {
             $this->fileptr = $tagptr;
             $this->fetchToken();
+            /** @var \stdClass&object{ptr: int, content: string, cstartptr: ?int, cendptr: ?int} $tag */
             $tag = (object)['ptr' => $tagptr, 'content' => '', 'cstartptr' => null, 'cendptr' => null];
             // Fetch the tag type, if any.
             if ($this->token['code'] == T_DOC_COMMENT_TAG) {
@@ -454,6 +486,9 @@ class PHPDocTypesSniff implements Sniff
             $this->commentpending->tags[$tagtype][] = $tag;
         }
 
+        if (!isset($this->tokens[$commentptr]['comment_closer'])) {
+            throw new \Exception("End of PHPDoc comment not found");
+        }
         $this->fileptr = $this->tokens[$commentptr]['comment_closer'];
         $this->fetchToken();
         if ($this->token['code'] != T_DOC_COMMENT_CLOSE_TAG) {
@@ -470,6 +505,9 @@ class PHPDocTypesSniff implements Sniff
      * @return void
      */
     protected function checkNo(object $comment, array $tagnames): void {
+        if (!static::CHECK_NO_MISPLACED) {
+            return;
+        }
         foreach ($tagnames as $tagname) {
             if (isset($comment->tags[$tagname])) {
                 $this->file->addWarning(
@@ -546,8 +584,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a namespace declaration.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @return void
      * @phpstan-impure
@@ -596,8 +634,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a use declaration.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @return void
      * @phpstan-impure
@@ -733,8 +771,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a classish thing.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -759,6 +797,7 @@ class PHPDocTypesSniff implements Sniff
         // Get details.
         $name = $this->file->getDeclarationName($ptr);
         $name = $name ? $scope->namespace . "\\" . $name : null;
+        /** @var non-empty-string|false $parent */
         $parent = $this->file->findExtendedClassName($ptr);
         if ($parent === false) {
             $parent = null;
@@ -769,6 +808,7 @@ class PHPDocTypesSniff implements Sniff
                 $parent = $scope->namespace . "\\" . $parent;
             }
         }
+        /** @var array<non-empty-string>|false $interfaces */
         $interfaces = $this->file->findImplementedInterfaceNames($ptr);
         if (!is_array($interfaces)) {
             $interfaces = [];
@@ -830,15 +870,15 @@ class PHPDocTypesSniff implements Sniff
                                 'phpdoc_class_prop_name'
                             );
                         } else {
-                            if (static::CHECK_NOT_COMPLEX && $docpropparsed->complex) {
+                            if (static::CHECK_PHP_FIG && !$docpropparsed->phpfig) {
                                 $this->file->addWarning(
                                     "PHPDoc class property type doesn't conform to PHP-FIG PHPDoc",
                                     $docprop->ptr,
-                                    'phpdoc_class_prop_type_complex'
+                                    'phpdoc_class_prop_type_phpfig'
                                 );
                             }
 
-                            if ($docpropparsed->fixed) {
+                            if (static::CHECK_STYLE && $docpropparsed->fixed) {
                                 $fix = $this->file->addFixableWarning(
                                     "PHPDoc class property type doesn't conform to recommended style",
                                     $docprop->ptr,
@@ -913,8 +953,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a function.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -954,8 +994,9 @@ class PHPDocTypesSniff implements Sniff
         if ($this->pass == 2) {
             // Check for missing docs if not anonymous.
             if (
-                static::CHECK_HAS_DOCS && $name && !$comment
-                && (count($parameters) > 0 || strtolower(trim($properties['return_type'])) != 'void')
+                static::CHECK_HAS_DOC_BLOCKS && $name && !$comment
+                && (count($parameters) > 0
+                    || $name != '__construct' && strtolower(trim($properties['return_type'])) != 'void')
             ) {
                 $this->file->addWarning(
                     "PHPDoc function is not documented",
@@ -981,9 +1022,9 @@ class PHPDocTypesSniff implements Sniff
                 foreach ($parameters as $parameter) {
                     $paramtext = trim($parameter['content']);
                     while (
-                        strpos($paramtext, ' ')
+                        ($spacepos = strpos($paramtext, ' '))
                         && in_array(
-                            strtolower(substr($paramtext, 0, strpos($paramtext, ' '))),
+                            strtolower(substr($paramtext, 0, $spacepos)),
                             ['public', 'private', 'protected', 'readonly']
                         )
                     ) {
@@ -1037,7 +1078,7 @@ class PHPDocTypesSniff implements Sniff
 
                         $paramparsed = $paramparsedarray[$docparamparsed->name];
 
-                        if (isset($docparamsmatched[$docparamparsed->name])) {
+                        if (static::CHECK_NO_MISPLACED && isset($docparamsmatched[$docparamparsed->name])) {
                             $this->file->addError(
                                 "PHPDoc function parameter repeated",
                                 $docparam->ptr,
@@ -1046,7 +1087,10 @@ class PHPDocTypesSniff implements Sniff
                         }
                         $docparamsmatched[$docparamparsed->name] = true;
 
-                        if (!$this->typeparser->comparetypes($paramparsed->type, $docparamparsed->type)) {
+                        if (
+                            static::CHECK_TYPE_MATCH
+                            && !$this->typeparser->comparetypes($paramparsed->type, $docparamparsed->type)
+                        ) {
                             $this->file->addError(
                                 "PHPDoc function parameter type mismatch",
                                 $docparam->ptr,
@@ -1054,15 +1098,15 @@ class PHPDocTypesSniff implements Sniff
                             );
                         }
 
-                        if (static::CHECK_NOT_COMPLEX && $docparamparsed->complex) {
+                        if (static::CHECK_PHP_FIG && !$docparamparsed->phpfig) {
                             $this->file->addWarning(
                                 "PHPDoc function parameter type doesn't conform to PHP-FIG PHPDoc",
                                 $docparam->ptr,
-                                'phpdoc_fun_param_type_complex'
+                                'phpdoc_fun_param_type_phpfig'
                             );
                         }
 
-                        if ($docparamparsed->fixed) {
+                        if (static::CHECK_STYLE && $docparamparsed->fixed) {
                             $fix = $this->file->addFixableWarning(
                                 "PHPDoc function parameter type doesn't conform to recommended style",
                                 $docparam->ptr,
@@ -1076,9 +1120,9 @@ class PHPDocTypesSniff implements Sniff
                             }
                         }
 
-                        if ($paramparsed->passsplat != $docparamparsed->passsplat) {
+                        if (static::CHECK_PASS_SPLAT && $paramparsed->passsplat != $docparamparsed->passsplat) {
                             $this->file->addWarning(
-                                "PHPDoc function parameter splat mismatch",
+                                "PHPDoc function parameter pass by reference or splat mismatch",
                                 $docparam->ptr,
                                 'phpdoc_fun_param_pass_splat_mismatch'
                             );
@@ -1087,7 +1131,7 @@ class PHPDocTypesSniff implements Sniff
                 }
 
                 // Check all parameters are documented (if all documented parameters were recognised).
-                if (static::CHECK_HAS_DOCS && count($docparamsmatched) == count($comment->tags['@param'])) {
+                if (static::CHECK_HAS_TAGS && count($docparamsmatched) == count($comment->tags['@param'])) {
                     foreach ($paramparsedarray as $paramname => $paramparsed) {
                         if (!isset($docparamsmatched[$paramname])) {
                             $this->file->addWarning(
@@ -1101,21 +1145,23 @@ class PHPDocTypesSniff implements Sniff
                 }
 
                 // Check parameters are in the correct order.
-                reset($paramparsedarray);
-                reset($docparamsmatched);
-                while (key($paramparsedarray) || key($docparamsmatched)) {
-                    if (key($docparamsmatched) == key($paramparsedarray)) {
-                        next($paramparsedarray);
-                        next($docparamsmatched);
-                    } elseif (key($paramparsedarray) && !isset($docparamsmatched[key($paramparsedarray)])) {
-                        next($paramparsedarray);
-                    } else {
-                        $this->file->addWarning(
-                            "PHPDoc function parameter order wrong",
-                            $comment->ptr,
-                            'phpdoc_fun_param_order'
-                        );
-                        break;
+                if (static::CHECK_NO_MISPLACED) {
+                    reset($paramparsedarray);
+                    reset($docparamsmatched);
+                    while (key($paramparsedarray) || key($docparamsmatched)) {
+                        if (key($docparamsmatched) == key($paramparsedarray)) {
+                            next($paramparsedarray);
+                            next($docparamsmatched);
+                        } elseif (key($paramparsedarray) && !isset($docparamsmatched[key($paramparsedarray)])) {
+                            next($paramparsedarray);
+                        } else {
+                            $this->file->addWarning(
+                                "PHPDoc function parameter order wrong",
+                                $comment->ptr,
+                                'phpdoc_fun_param_order'
+                            );
+                            break;
+                        }
                     }
                 }
             }
@@ -1134,16 +1180,15 @@ class PHPDocTypesSniff implements Sniff
                     $comment->tags['@return'] = [];
                 }
                 if (
-                    static::CHECK_HAS_DOCS && count($comment->tags['@return']) < 1
+                    static::CHECK_HAS_TAGS && count($comment->tags['@return']) < 1
                     && $name != '__construct' && $retparsed->type != 'void'
                 ) {
-                    // The old checker didn't check this.
                     $this->file->addWarning(
                         "PHPDoc missing function @return tag",
                         $comment->ptr,
                         'phpdoc_fun_ret_missing'
                     );
-                } elseif (count($comment->tags['@return']) > 1) {
+                } elseif (static::CHECK_NO_MISPLACED && count($comment->tags['@return']) > 1) {
                     $this->file->addError(
                         "PHPDoc multiple function @return tags--Put in one tag, seperated by vertical bars |",
                         $comment->tags['@return'][1]->ptr,
@@ -1167,7 +1212,10 @@ class PHPDocTypesSniff implements Sniff
                             'phpdoc_fun_ret_type'
                         );
                     } else {
-                        if (!$this->typeparser->comparetypes($retparsed->type, $docretparsed->type)) {
+                        if (
+                            static::CHECK_TYPE_MATCH
+                            && !$this->typeparser->comparetypes($retparsed->type, $docretparsed->type)
+                        ) {
                             $this->file->addError(
                                 "PHPDoc function return type mismatch",
                                 $docret->ptr,
@@ -1175,15 +1223,15 @@ class PHPDocTypesSniff implements Sniff
                             );
                         }
 
-                        if (static::CHECK_NOT_COMPLEX && $docretparsed->complex) {
+                        if (static::CHECK_PHP_FIG && !$docretparsed->phpfig) {
                             $this->file->addWarning(
                                 "PHPDoc function return type doesn't conform to PHP-FIG PHPDoc",
                                 $docret->ptr,
-                                'phpdoc_fun_ret_type_complex'
+                                'phpdoc_fun_ret_type_phpfig'
                             );
                         }
 
-                        if ($docretparsed->fixed) {
+                        if (static::CHECK_STYLE && $docretparsed->fixed) {
                             $fix = $this->file->addFixableWarning(
                                 "PHPDoc function return type doesn't conform to recommended style",
                                 $docret->ptr,
@@ -1202,10 +1250,8 @@ class PHPDocTypesSniff implements Sniff
         }
 
         // Parameters could contain anonymous classes or functions.
-        if ($parametersptr) {
-            $this->advanceTo($parametersptr);
-            $this->processBlock($scope, 2);
-        }
+        $this->advanceTo($parametersptr);
+        $this->processBlock($scope, 2);
 
         // Content.
         if ($blockptr) {
@@ -1217,8 +1263,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process templates.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -1248,15 +1294,15 @@ class PHPDocTypesSniff implements Sniff
             } else {
                 $scope->templates[$doctemplateparsed->name] = $doctemplateparsed->type;
 
-                if (static::CHECK_NOT_COMPLEX && $doctemplateparsed->complex) {
+                if (static::CHECK_PHP_FIG && !$doctemplateparsed->phpfig) {
                     $this->file->addWarning(
                         "PHPDoc template type doesn't conform to PHP-FIG PHPDoc",
                         $doctemplate->ptr,
-                        'phpdoc_template_type_complex'
+                        'phpdoc_template_type_phpfig'
                     );
                 }
 
-                if ($doctemplateparsed->fixed) {
+                if (static::CHECK_STYLE && $doctemplateparsed->fixed) {
                     $fix = $this->file->addFixableWarning(
                         "PHPDoc tempate type doesn't conform to recommended style",
                         $doctemplate->ptr,
@@ -1276,8 +1322,8 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a variable.
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope
      * @param ?(
      *      \stdClass&object{
@@ -1326,7 +1372,7 @@ class PHPDocTypesSniff implements Sniff
                             : null;
             $vartype = ($properties && $properties['type']) ? $properties['type'] : 'mixed';
 
-            if (static::CHECK_HAS_DOCS && !$comment && $scope->type == 'classish') {
+            if (static::CHECK_HAS_DOC_BLOCKS && !$comment && $scope->type == 'classish') {
                 // Require comments for class variables and constants.
                 $this->file->addWarning(
                     "PHPDoc variable or constant is not documented",
@@ -1345,7 +1391,7 @@ class PHPDocTypesSniff implements Sniff
                 }
 
                 // Missing var tag.
-                if (static::CHECK_HAS_DOCS && count($comment->tags['@var']) < 1) {
+                if (static::CHECK_HAS_TAGS && count($comment->tags['@var']) < 1) {
                     $this->file->addWarning(
                         "PHPDoc variable missing @var tag",
                         $comment->ptr,
@@ -1377,7 +1423,10 @@ class PHPDocTypesSniff implements Sniff
                             'phpdoc_var_type'
                         );
                     } else {
-                        if (!$this->typeparser->comparetypes($varparsed->type, $docvarparsed->type)) {
+                        if (
+                            static::CHECK_TYPE_MATCH
+                            && !$this->typeparser->comparetypes($varparsed->type, $docvarparsed->type)
+                        ) {
                             $this->file->addError(
                                 "PHPDoc var type mismatch",
                                 $docvar->ptr,
@@ -1385,15 +1434,15 @@ class PHPDocTypesSniff implements Sniff
                             );
                         }
 
-                        if (static::CHECK_NOT_COMPLEX && $docvarparsed->complex) {
+                        if (static::CHECK_PHP_FIG && !$docvarparsed->phpfig) {
                             $this->file->addWarning(
                                 "PHPDoc var type doesn't conform to PHP-FIG PHPDoc",
                                 $docvar->ptr,
-                                'phpdoc_var_type_complex'
+                                'phpdoc_var_type_phpfig'
                             );
                         }
 
-                        if ($docvarparsed->fixed) {
+                        if (static::CHECK_STYLE && $docvarparsed->fixed) {
                             $fix = $this->file->addFixableWarning(
                                 "PHPDoc var type doesn't conform to recommended style",
                                 $docvar->ptr,
@@ -1426,8 +1475,8 @@ class PHPDocTypesSniff implements Sniff
      * we'll just check the type is well formed, and assume it's otherwise OK.
      *
      * @param \stdClass&object{
-     *      namespace: string, uses: string[], templates: string[],
-     *      classname: ?string, parentname: ?string, type: string, closer: ?int
+     *      namespace: string, uses: array<non-empty-string, non-empty-string>, templates: array<non-empty-string, non-empty-string>,
+     *      classname: ?non-empty-string, parentname: ?non-empty-string, type: non-empty-string, closer: ?int
      * } $scope  We don't actually need the scope, because we're not doing a type comparison.
      * @param ?(
      *      \stdClass&object{
@@ -1462,15 +1511,15 @@ class PHPDocTypesSniff implements Sniff
                             'phpdoc_var_type'
                         );
                     } else {
-                        if (static::CHECK_NOT_COMPLEX && $docvarparsed->complex) {
+                        if (static::CHECK_PHP_FIG && !$docvarparsed->phpfig) {
                             $this->file->addWarning(
                                 "PHPDoc var type doesn't conform to PHP-FIG PHPDoc",
                                 $docvar->ptr,
-                                'phpdoc_var_type_complex'
+                                'phpdoc_var_type_phpfig'
                             );
                         }
 
-                        if ($docvarparsed->fixed) {
+                        if (static::CHECK_STYLE && $docvarparsed->fixed) {
                             $fix = $this->file->addFixableWarning(
                                 "PHPDoc var type doesn't conform to recommended style",
                                 $docvar->ptr,
