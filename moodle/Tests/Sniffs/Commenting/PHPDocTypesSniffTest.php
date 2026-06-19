@@ -79,7 +79,7 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                 'warnings' => [],
             ],
             [
-                'fixture' => 'phpdoc_constructor_property_promotion_readonly',
+                'fixture' => 'phpdoc_tags_general',
                 'errors' => [
                     66 => 'PHPDoc types for function error',
                     76 => 'PHPDoc types for function error',
