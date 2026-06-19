@@ -84,35 +84,47 @@ class PHPDocTypesSniff implements Sniff
             $docParamString = preg_replace('/ +/', ' ', trim($docParamString)) . '  ';
             $docParam2ndSpace = strpos($docParamString, ' ', strpos($docParamString, ' ') + 1);
             $docParamString = substr($docParamString, 0, $docParam2ndSpace);
-            $docParamString = preg_replace('/& | &|\\.\\.\\. | \\.\\.\\.|&\\.\\.\\. |& \\.\\.\\.| &\\.\\.\\./', ' ', $docParamString);
+            $docParamString = preg_replace(
+                '/& | &|\\.\\.\\. | \\.\\.\\.|&\\.\\.\\. |& \\.\\.\\.| &\\.\\.\\./',
+                ' ',
+                $docParamString
+            );
             $docParamArray = explode(' ', $docParamString);
             $docParams[] = [
                 'type_hint' => $this->simplifyType($docParamArray[0]),
-                'name' => $docParamArray[1]
+                'name' => $docParamArray[1],
             ];
         }
 
         // Check parameters match.
         $match = count($docParams) == count($nativeParams);
-        if ($match) foreach ($docParams as $index => $docParam) {
-            $nativeParam = $nativeParams[$index];
-            $match = $match && ($docParam['name'] !== '') && ($docParam['type_hint'] !== '');
-            if (!$match) break;
-            $match = $match && ($docParam['name'] == $nativeParam['name']);
-            if (!$match) break;
-            $match = $match && $this->typeMatch($docParam['type_hint'], $nativeParam['type_hint']);
-            if (!$match) break;
+        if ($match) {
+            foreach ($docParams as $index => $docParam) {
+                $nativeParam = $nativeParams[$index];
+                $match = $match && ($docParam['name'] !== '') && ($docParam['type_hint'] !== '');
+                $match = $match && ($docParam['name'] == $nativeParam['name']);
+                if ($match) {
+                    $match = $match && $this->typeMatch($docParam['type_hint'], $nativeParam['type_hint']);
+                }
+                if (!$match) {
+                    break;
+                }
+            }
         }
 
         // Check return tags have types.
-        $docRetTagPtrs = Docblocks::getMatchingDocTags($phpcsFile, $docBlockPtr, '@return');
-        if ($match) foreach ($docRetTagPtrs as $docRetTagPtr) {
-            $docRetToken = $tokens[$docRetTagPtr + 2] ?? null;
-            $docRetString = ($docRetToken && $docRetToken['code'] == T_DOC_COMMENT_STRING) ?
-                $docRetToken['content'] : '';
-            $docRetString = trim($docRetString);
-            $match = $match && ($docRetString != '');
-            if (!$match) break;
+        if ($match) {
+            $docRetTagPtrs = Docblocks::getMatchingDocTags($phpcsFile, $docBlockPtr, '@return');
+            foreach ($docRetTagPtrs as $docRetTagPtr) {
+                $docRetToken = $tokens[$docRetTagPtr + 2] ?? null;
+                $docRetString = ($docRetToken && $docRetToken['code'] == T_DOC_COMMENT_STRING) ?
+                    $docRetToken['content'] : '';
+                $docRetString = trim($docRetString);
+                $match = $match && ($docRetString != '');
+                if (!$match) {
+                    break;
+                }
+            }
         }
 
         // Report error if appropriate.
@@ -133,7 +145,7 @@ class PHPDocTypesSniff implements Sniff
      * @param string $type The type to be simplified
      * @return string
      */
-    function simplifyType(string $type): string {
+    protected function simplifyType(string $type): string {
         // Simplify multi-type arrays.
         do {
             $type = preg_replace('/\\([^()]*\\)\\[\\]/', 'mixed[]', $type, -1, $count);
@@ -159,8 +171,10 @@ class PHPDocTypesSniff implements Sniff
      * @param string $nativeTypeStr
      * @return bool
      */
-    function typeMatch(string $docTypeStr, $nativeTypeStr): bool {
-        if ($nativeTypeStr == '' || $docTypeStr == $nativeTypeStr) return true;
+    protected function typeMatch(string $docTypeStr, $nativeTypeStr): bool {
+        if ($nativeTypeStr == '' || $docTypeStr == $nativeTypeStr) {
+            return true;
+        }
 
         $docTypeArray = explode('|', $docTypeStr);
         $nativeTypeArray = explode('|', $nativeTypeStr);
@@ -168,7 +182,9 @@ class PHPDocTypesSniff implements Sniff
         // We need to check every Doc type.
         foreach ($docTypeArray as $docType) {
             $docParts = explode('&', $docType);
-            if (in_array('never', $docParts)) continue;
+            if (in_array('never', $docParts)) {
+                continue;
+            }
 
             // And make sure there is a matching native type.
             $found = false;
@@ -182,8 +198,9 @@ class PHPDocTypesSniff implements Sniff
                     break;
                 }
             }
-            if (!$found) return false;
-
+            if (!$found) {
+                return false;
+            }
         }
 
         return true;

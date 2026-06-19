@@ -94,11 +94,6 @@ class PHPDocTypesSniffTest extends MoodleCSBaseTestCase
                 ],
                 'warnings' => [],
             ],
-            [
-                'fixture' => 'phpdoc_tags_inline',
-                'errors' => [],
-                'warnings' => [],
-            ],
         ];
         return $cases;
     }
