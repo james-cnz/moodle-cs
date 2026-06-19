@@ -81,7 +81,7 @@ class PHPDocTypesSniff implements Sniff
             $docParamToken = $tokens[$docParamTagPtr + 2] ?? null;
             $docParamString = ($docParamToken && $docParamToken['code'] == T_DOC_COMMENT_STRING) ?
                 $docParamToken['content'] : '';
-            $docParamString = preg_replace('/ +/', ' ', trim($docParamString)) . '  ';
+            $docParamString = preg_replace('/\\s+/', ' ', trim($docParamString)) . '  ';
             $docParam2ndSpace = strpos($docParamString, ' ', strpos($docParamString, ' ') + 1);
             $docParamString = substr($docParamString, 0, $docParam2ndSpace);
             $docParamString = preg_replace(
